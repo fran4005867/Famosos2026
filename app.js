@@ -1,4 +1,21 @@
 // ==========================================================================
+// CACHE DE EXTENSIONES DE IMÁGENES
+// ==========================================================================
+window.imageExtensionCache = {};
+try {
+  const savedCache = localStorage.getItem('panini_image_ext_cache');
+  if (savedCache) {
+    window.imageExtensionCache = JSON.parse(savedCache);
+  }
+} catch(e) {}
+
+function getStickerImgSrc(teamId, i) {
+  const key = `${teamId}_${i}`;
+  const ext = window.imageExtensionCache[key] || '.png';
+  return `${ALBUM_CONFIG.basePath}/${teamId}/${i}${ext}`;
+}
+
+// ==========================================================================
 // FIREBASE - INICIALIZACIÓN Y AUTENTICACIÓN
 // ==========================================================================
 let _fbAuth = null;
@@ -124,6 +141,90 @@ window.handleImageError = function(img, basePath) {
     }
 };
 
+window.handleImageSuccess = function(img, basePath) {
+  // Extraer extensión del src final exitoso
+  const src = img.src;
+  const dotIdx = src.lastIndexOf('.');
+  if (dotIdx !== -1) {
+    const ext = src.substring(dotIdx);
+    const match = basePath.match(/\/([^\/]+)\/([^\/]+)$/);
+    if (match) {
+      const teamId = match[1];
+      const i = match[2];
+      const key = `${teamId}_${i}`;
+      if (window.imageExtensionCache[key] !== ext) {
+        window.imageExtensionCache[key] = ext;
+        localStorage.setItem('panini_image_ext_cache', JSON.stringify(window.imageExtensionCache));
+      }
+    }
+  }
+};
+
+// ==========================================================================
+// PRECARGA DE IMÁGENES (PRELOAD SYSTEM)
+// ==========================================================================
+function preloadAllStickers() {
+  const teams = ALBUM_CONFIG.teams;
+  const queue = [];
+
+  // 1. Añadir el equipo actual al frente de la cola
+  const currentTeam = teams[currentTeamIndex];
+  addTeamToPreloadQueue(currentTeam, queue);
+
+  // 2. Añadir los demás equipos
+  teams.forEach((team, idx) => {
+    if (idx !== currentTeamIndex) {
+      addTeamToPreloadQueue(team, queue);
+    }
+  });
+
+  // Procesar la cola concurrentemente pero sin saturar la red (máx 4 descargas paralelas)
+  processPreloadQueue(queue);
+}
+
+function addTeamToPreloadQueue(team, queue) {
+  const max = team.id === 'extrastickers' ? 5 : 11;
+  // Bandera del equipo
+  if (team.id !== 'extrastickers') {
+    queue.push(`${ALBUM_CONFIG.basePath}/${team.id}/bandera.png`);
+  }
+  // Figuritas
+  for (let i = 1; i <= max; i++) {
+    const key = `${team.id}_${i}`;
+    const ext = window.imageExtensionCache[key] || '.png';
+    queue.push(`${ALBUM_CONFIG.basePath}/${team.id}/${i}${ext}`);
+    
+    // Si no sabemos la extensión aún, también encolamos alternativas comunes
+    if (!window.imageExtensionCache[key]) {
+      queue.push(`${ALBUM_CONFIG.basePath}/${team.id}/${i}.jpg`);
+      queue.push(`${ALBUM_CONFIG.basePath}/${team.id}/${i}.jpeg`);
+    }
+  }
+}
+
+let preloadActiveCount = 0;
+const MAX_CONCURRENT_PRELOADS = 4;
+
+function processPreloadQueue(queue) {
+  if (queue.length === 0) return;
+  
+  while (preloadActiveCount < MAX_CONCURRENT_PRELOADS && queue.length > 0) {
+    const src = queue.shift();
+    preloadActiveCount++;
+    
+    const img = new Image();
+    img.onload = () => {
+      preloadActiveCount--;
+      processPreloadQueue(queue);
+    };
+    img.onerror = () => {
+      preloadActiveCount--;
+      processPreloadQueue(queue);
+    };
+    img.src = src;
+  }
+}
+
 // ==========================================================================
 // INICIALIZACIÓN
 // ==========================================================================
@@ -135,6 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAlbumPage();
   renderTeamIndicators();
   updateTimer();
+  
+  // Iniciar la precarga en segundo plano tras inicializar la app
+  preloadAllStickers();
 });
 
 function loadState() {
@@ -331,7 +435,7 @@ function renderAlbumPage(justPastedKey = null) {
     const isJustPasted = cardKey === justPastedKey;
     
     const basePath = `${ALBUM_CONFIG.basePath}/${team.id}/${i}`;
-    const imgSrc = `${basePath}.png`;
+    const imgSrc = getStickerImgSrc(team.id, i);
     
     const slot = document.createElement('div');
     slot.className = 'sticker-slot';
@@ -341,7 +445,7 @@ function renderAlbumPage(justPastedKey = null) {
       const animClass = isJustPasted ? ' just-pasted' : '';
       slot.innerHTML = `
         <div class="sticker-card${animClass}" onclick="viewCard('${basePath}')">
-          <img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')" />
+          <img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')" onload="window.handleImageSuccess(this, '${basePath}')" />
         </div>
       `;
     } else if (canPaste) {
@@ -373,9 +477,16 @@ function pasteSticker(cardKey) {
 }
 
 function viewCard(basePath) {
+  const match = basePath.match(/\/([^\/]+)\/([^\/]+)$/);
+  let src = `${basePath}.png`;
+  if (match) {
+    const teamId = match[1];
+    const i = match[2];
+    src = getStickerImgSrc(teamId, i);
+  }
   const modal = document.getElementById('sticker-modal');
   const inner = document.getElementById('modal-inner');
-  inner.innerHTML = `<div class="sticker-card"><img src="${basePath}.png" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')"/></div>`;
+  inner.innerHTML = `<div class="sticker-card"><img src="${src}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')" onload="window.handleImageSuccess(this, '${basePath}')"/></div>`;
   modal.classList.remove('hidden');
 }
 
@@ -507,7 +618,7 @@ function revealCards() {
     state.inventory[cardKey] = (state.inventory[cardKey] || 0) + 1;
     
     const basePath = `${ALBUM_CONFIG.basePath}/${team.id}/${num}`;
-    const imgSrc = `${basePath}.png`;
+    const imgSrc = getStickerImgSrc(team.id, num);
     
     const newBadgeHtml = isNew ? `<div class="new-sticker-badge">⭐ NUEVA</div>` : '';
     
@@ -516,7 +627,7 @@ function revealCards() {
     div.innerHTML = `
       <div class="sticker-card revealed-card">
         ${newBadgeHtml}
-        <img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')"/>
+        <img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')" onload="window.handleImageSuccess(this, '${basePath}')"/>
       </div>
     `;
     container.appendChild(div);
@@ -548,13 +659,13 @@ function renderDuplicates() {
       if(repetidas > 0) {
         hasDups = true;
         const basePath = `${ALBUM_CONFIG.basePath}/${team.id}/${i}`;
-        const imgSrc = `${basePath}.png`;
+        const imgSrc = getStickerImgSrc(team.id, i);
         
         const item = document.createElement('div');
         item.style.position = 'relative';
         item.innerHTML = `
           <div style="position:absolute; top:-10px; right:-10px; background:#e2001a; color:white; width:25px; height:25px; border-radius:50%; display:flex; justify-content:center; align-items:center; z-index:5; font-weight:bold;">${repetidas}</div>
-          <div class="sticker-card"><img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')"/></div>
+          <div class="sticker-card"><img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')" onload="window.handleImageSuccess(this, '${basePath}')"/></div>
         `;
         grid.appendChild(item);
       }
