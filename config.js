@@ -52,6 +52,16 @@ const ALBUM_CONFIG = {
             flags: ['RUS', 'KSA', 'EGY', 'URU']
         },
         {
+            id: 'mexico',
+            name: 'México',
+            flag: '🇲🇽',
+            federation: 'Federación Mexicana de Fútbol',
+            group: 'GROUP C',
+            color1: '#006341',
+            color2: '#c8102e',
+            flags: ['MEX', 'POL', 'ARG', 'KSA']
+        },
+        {
             id: 'extrastickers',
             name: 'Extra Stickers',
             flag: '⭐',
