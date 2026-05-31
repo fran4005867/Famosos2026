@@ -50,6 +50,16 @@ const ALBUM_CONFIG = {
             color1: '#d52b1e',
             color2: '#0039a6',
             flags: ['RUS', 'KSA', 'EGY', 'URU']
+        },
+        {
+            id: 'extrastickers',
+            name: 'Extra Stickers',
+            flag: '⭐',
+            federation: 'Famosos Legendarios Premium',
+            group: 'LEGENDS',
+            color1: '#ffd700',
+            color2: '#000000',
+            flags: ['GLD', 'SLV', 'BRZ', 'PRM']
         }
     ]
 };

@@ -185,7 +185,10 @@ function switchTab(tabId) {
 function updateTopBar() {
   document.getElementById('coins-display').textContent = state.coins;
   
-  let totalStickers = ALBUM_CONFIG.teams.length * 11;
+  let totalStickers = 0;
+  ALBUM_CONFIG.teams.forEach(t => {
+    totalStickers += t.id === 'extrastickers' ? 5 : 11;
+  });
   let pastedCount = Object.keys(state.pasted).length;
   
   document.getElementById('main-progress-text').textContent = `${pastedCount} / ${totalStickers}`;
@@ -247,8 +250,14 @@ function renderTeamIndicators() {
 function renderAlbumPage(justPastedKey = null) {
   const team = ALBUM_CONFIG.teams[currentTeamIndex];
   
-  const bgStyle = `radial-gradient(circle at top left, ${team.color1} 0%, rgba(255,255,255,0.8) 100%)`;
-  const bgStyleRight = `radial-gradient(circle at bottom right, ${team.color2} 0%, rgba(255,255,255,0.8) 100%)`;
+  let bgStyle, bgStyleRight;
+  if (team.id === 'extrastickers') {
+    bgStyle = `radial-gradient(circle at top left, #ffd700 0%, #151515 100%)`;
+    bgStyleRight = `radial-gradient(circle at bottom right, #252525 0%, #101010 100%)`;
+  } else {
+    bgStyle = `radial-gradient(circle at top left, ${team.color1} 0%, rgba(255,255,255,0.8) 100%)`;
+    bgStyleRight = `radial-gradient(circle at bottom right, ${team.color2} 0%, rgba(255,255,255,0.8) 100%)`;
+  }
   
   document.getElementById('page-bg-left').style.background = bgStyle;
   document.getElementById('page-bg-right').style.background = bgStyleRight;
@@ -259,24 +268,49 @@ function renderAlbumPage(justPastedKey = null) {
     <img src="${flagPath}" class="flag-watermark-img flag-top-left" onerror="this.style.display='none'" />
     <img src="${flagPath}" class="flag-watermark-img" onerror="this.style.display='none'" />
   `;
-  document.getElementById('team-header').innerHTML = `
-    <img src="${ALBUM_CONFIG.basePath}/${team.id}/bandera.png" class="team-flag-img" onerror="this.style.display='none'" />
-    <div class="we-are-text" style="color: ${team.color1}; text-shadow: 3px 3px 0px ${team.color2}">WE ARE<br/>${team.name}</div>
-    <div class="federation-text">${team.federation}</div>
-  `;
   
-  let flagsHtml = team.flags.map(f => `<span class="group-flag" style="border-bottom: 3px solid ${team.color1}">${f}</span>`).join('');
-  document.getElementById('group-info').innerHTML = `
-    <div class="group-title">${team.group}</div>
-    <div class="group-flags">${flagsHtml}</div>
-  `;
+  if (team.id === 'extrastickers') {
+    document.getElementById('team-header').innerHTML = `
+      <img src="${ALBUM_CONFIG.basePath}/${team.id}/bandera.png" class="team-flag-img" onerror="this.style.display='none'" />
+      <div class="we-are-text" style="color: #ffd700; text-shadow: 3px 3px 0px #000000; font-family: var(--font-title);">EXTRA<br/>STICKERS</div>
+      <div class="federation-text" style="color: #ccc;">${team.federation}</div>
+    `;
+  } else {
+    document.getElementById('team-header').innerHTML = `
+      <img src="${ALBUM_CONFIG.basePath}/${team.id}/bandera.png" class="team-flag-img" onerror="this.style.display='none'" />
+      <div class="we-are-text" style="color: ${team.color1}; text-shadow: 3px 3px 0px ${team.color2}">WE ARE<br/>${team.name}</div>
+      <div class="federation-text">${team.federation}</div>
+    `;
+  }
   
   const gridL = document.getElementById('grid-left');
   const gridR = document.getElementById('grid-right');
   gridL.innerHTML = '';
   gridR.innerHTML = '';
   
-  for(let i=1; i<=11; i++) {
+  // Si es sección extra, ocultamos la grilla derecha y mostramos un banner especial
+  if (team.id === 'extrastickers') {
+    gridR.classList.add('hidden');
+    document.getElementById('group-info').innerHTML = `
+      <div class="legendary-banner" style="text-align: center; color: #ffd700; padding: 20px; font-family: var(--font-title); border: 2px solid #ffd700; background: rgba(0,0,0,0.5); border-radius: 10px; margin-top: 15px;">
+        <div style="font-size: 2.5rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px #ffd700);">👑</div>
+        <div style="font-size: 1.3rem; font-weight: bold; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">Colección de Leyendas</div>
+        <p style="font-size: 0.85rem; color: #ccc; line-height: 1.4; max-width: 250px; margin: 0 auto;">
+          Las 5 leyendas más exclusivas de la historia del fútbol. Conseguilas abriendo sobres para completar tu colección premium al 100%.
+        </p>
+      </div>
+    `;
+  } else {
+    gridR.classList.remove('hidden');
+    let flagsHtml = team.flags.map(f => `<span class="group-flag" style="border-bottom: 3px solid ${team.color1}">${f}</span>`).join('');
+    document.getElementById('group-info').innerHTML = `
+      <div class="group-title">${team.group}</div>
+      <div class="group-flags">${flagsHtml}</div>
+    `;
+  }
+  
+  const totalStickers = team.id === 'extrastickers' ? 5 : 11;
+  for(let i=1; i<=totalStickers; i++) {
     const cardKey = `${team.id}_${i}`;
     const isPasted = !!state.pasted[cardKey];
     const owned = state.inventory[cardKey] || 0;
@@ -437,7 +471,8 @@ function revealCards() {
   
   while(cardsGenerated < 5) {
     const team = ALBUM_CONFIG.teams[Math.floor(Math.random() * ALBUM_CONFIG.teams.length)];
-    const num = Math.floor(Math.random() * 11) + 1;
+    const maxStickers = team.id === 'extrastickers' ? 5 : 11;
+    const num = Math.floor(Math.random() * maxStickers) + 1;
     const cardKey = `${team.id}_${num}`;
     
     if (cardsInPack.has(cardKey)) {
@@ -481,7 +516,8 @@ function renderDuplicates() {
   let hasDups = false;
   
   ALBUM_CONFIG.teams.forEach(team => {
-    for(let i=1; i<=11; i++){
+    const maxStickers = team.id === 'extrastickers' ? 5 : 11;
+    for(let i=1; i<=maxStickers; i++){
       const key = `${team.id}_${i}`;
       const pasted = !!state.pasted[key];
       const inv = state.inventory[key] || 0;
