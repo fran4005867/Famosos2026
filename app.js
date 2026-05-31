@@ -26,6 +26,15 @@ function initFirebase() {
 async function handleAuthStateChanged(user) {
   _currentUser = user;
   renderUserTopbar();
+  // Mostrar tab de admin solo para el administrador
+  const adminBtn = document.getElementById('admin-tab-btn');
+  if (adminBtn) {
+    if (user && user.email === 'olanoagus@gmail.com') {
+      adminBtn.classList.remove('hidden');
+    } else {
+      adminBtn.classList.add('hidden');
+    }
+  }
   if (user) {
     // Cargamos el progreso desde la nube al iniciar sesión
     await loadStateFromCloud(user.uid);
@@ -180,6 +189,7 @@ function switchTab(tabId) {
   
   if (tabId === 'album') renderAlbumPage();
   if (tabId === 'duplicates') renderDuplicates();
+  if (tabId === 'admin') adminLoadCodes();
 }
 
 function updateTopBar() {
@@ -583,50 +593,181 @@ function sellAllDuplicates() {
 // ==========================================================================
 // CÓDIGOS PROMOCIONALES
 // ==========================================================================
-function redeemCode() {
+async function redeemCode() {
   const val = document.getElementById('code-input').value.trim().toUpperCase();
   const msg = document.getElementById('code-msg');
-  
-  // Limpiar mensaje previo
   msg.innerHTML = '';
-
   if (!val) return;
 
-  // Inicializar por seguridad
   state.usedCodes = state.usedCodes || {};
 
-  // Verificar si el código ya fue usado
+  // Verificar si el código ya fue usado localmente
   if (state.usedCodes[val]) {
     msg.innerHTML = "<span style='color:#dc3545'>⚠️ Este código ya fue utilizado.</span>";
     showToast("Código ya utilizado.", "error");
     return;
   }
-  
-  if (val === 'INFINITOPLATA') { 
-    state.coins += 999999; 
+
+  // --- Códigos hardcodeados ---
+  const hardcoded = {
+    'INFINITOPLATA': { coins: 999999, label: '🤑 ¡CHEAT ACTIVADO! +999,999 🪙' },
+    'MUNDIAL2026':   { coins: 1000,   label: '+1000 🪙' },
+    'LEGEND':        { coins: 150,    label: '+150 🪙' },
+  };
+
+  if (hardcoded[val]) {
+    const { coins, label } = hardcoded[val];
+    state.coins += coins;
     state.usedCodes[val] = true;
-    msg.innerHTML = "<span style='color:#ffd700'>🤑 ¡CHEAT ACTIVADO! +999,999 🪙</span>";
-    showToast("Plata infinita activada.", "success");
-  }
-  else if (val === 'MUNDIAL2026') { 
-    state.coins += 1000; 
-    state.usedCodes[val] = true;
-    msg.innerHTML = "<span style='color:#28a745'>+1000 🪙</span>"; 
-    showToast("¡Código canjeado! +1000 🪙", "success");
-  }
-  else if (val === 'LEGEND') { 
-    state.coins += 150; 
-    state.usedCodes[val] = true;
-    msg.innerHTML = "<span style='color:#28a745'>+150 🪙</span>"; 
-    showToast("¡Código canjeado! +150 🪙", "success");
-  }
-  else { 
-    msg.innerHTML = "<span style='color:#dc3545'>Código inválido o caducado.</span>"; 
+    msg.innerHTML = `<span style='color:#28a745'>${label}</span>`;
+    showToast(`¡Código canjeado! +${coins} 🪙`, 'success');
+    document.getElementById('code-input').value = '';
+    saveState();
     return;
   }
-  
-  document.getElementById('code-input').value = '';
-  saveState();
+
+  // --- Códigos dinámicos de Firestore ---
+  if (_fbDb) {
+    msg.innerHTML = "<span style='color:#aaa'>🔍 Verificando código...</span>";
+    try {
+      const snap = await _fbDb.collection('promoCodes').doc(val).get();
+      if (snap.exists) {
+        const data = snap.data();
+        if (data.used) {
+          msg.innerHTML = "<span style='color:#dc3545'>⚠️ Este código ya fue utilizado.</span>";
+          showToast("Código ya utilizado.", "error");
+          return;
+        }
+        // Marcar como usado en Firestore
+        await _fbDb.collection('promoCodes').doc(val).update({ used: true, usedBy: _currentUser ? _currentUser.email : 'guest', usedAt: Date.now() });
+        state.coins += data.coins;
+        state.usedCodes[val] = true;
+        msg.innerHTML = `<span style='color:#28a745'>+${data.coins} 🪙</span>`;
+        showToast(`¡Código canjeado! +${data.coins} 🪙`, 'success');
+        document.getElementById('code-input').value = '';
+        saveState();
+        return;
+      }
+    } catch(e) {
+      console.error('[Admin] Error verificando código:', e);
+    }
+  }
+
+  msg.innerHTML = "<span style='color:#dc3545'>Código inválido o caducado.</span>";
+}
+
+// ==========================================================================
+// PANEL DE ADMIN
+// ==========================================================================
+const ADMIN_EMAIL = 'olanoagus@gmail.com';
+
+function _isAdmin() {
+  return _currentUser && _currentUser.email === ADMIN_EMAIL;
+}
+
+function setAdminAmount(amount) {
+  document.getElementById('admin-amount-input').value = amount;
+  // Highlight del botón seleccionado
+  document.querySelectorAll('.admin-amount-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function _randomCode(length = 8) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < length; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function adminGenerateCode() {
+  if (!_isAdmin()) { showToast('No autorizado.', 'error'); return; }
+  const coinsRaw = document.getElementById('admin-amount-input').value;
+  const coins = parseInt(coinsRaw, 10);
+  if (!coins || coins < 1) {
+    showToast('Eligí un monto de monedas primero.', 'error');
+    return;
+  }
+
+  const code = _randomCode();
+  const resultEl = document.getElementById('admin-result');
+  const displayEl = document.getElementById('admin-code-display');
+  const coinsEl   = document.getElementById('admin-code-coins');
+
+  // Guardar en Firestore
+  if (_fbDb) {
+    try {
+      await _fbDb.collection('promoCodes').doc(code).set({
+        coins,
+        used: false,
+        createdBy: ADMIN_EMAIL,
+        createdAt: Date.now()
+      });
+      displayEl.textContent = code;
+      coinsEl.textContent = `🪙 ${coins} monedas`;
+      resultEl.classList.remove('hidden');
+      showToast('¡Código creado y guardado!', 'success');
+      adminLoadCodes();
+    } catch(e) {
+      showToast('Error al guardar en Firestore.', 'error');
+      console.error(e);
+    }
+  } else {
+    // Sin Firebase: solo mostrar en pantalla
+    displayEl.textContent = code;
+    coinsEl.textContent = `🪙 ${coins} monedas (solo local, sin Firebase)`;
+    resultEl.classList.remove('hidden');
+  }
+}
+
+function adminCopyCode() {
+  const code = document.getElementById('admin-code-display').textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => showToast('¡Código copiado!'));
+}
+
+async function adminLoadCodes() {
+  if (!_isAdmin() || !_fbDb) return;
+  const listEl = document.getElementById('admin-codes-list');
+  listEl.innerHTML = '<p style="color:#555; font-size:0.85rem;">Cargando...</p>';
+  try {
+    const snap = await _fbDb.collection('promoCodes').orderBy('createdAt', 'desc').limit(30).get();
+    if (snap.empty) {
+      listEl.innerHTML = '<p style="color:#555; font-size:0.85rem;">No hay códigos todavía.</p>';
+      return;
+    }
+    listEl.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.06); padding:10px 14px; border-radius:8px; font-size:0.9rem;';
+      row.innerHTML = `
+        <div>
+          <span style="font-family:'Orbitron',sans-serif; color:${d.used ? '#666' : '#ffd700'}; letter-spacing:2px; font-size:0.95rem;">${doc.id}</span>
+          <span style="color:#aaa; margin-left:10px;">${d.used ? '✓ Usado' : '● Activo'}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="color:#ffd700; font-weight:bold;">🪙${d.coins}</span>
+          ${!d.used ? `<button onclick="adminDeleteCode('${doc.id}')" style="background:rgba(220,53,69,0.2); border:1px solid #dc3545; color:#dc3545; padding:3px 9px; border-radius:5px; cursor:pointer; font-size:0.75rem;">❌</button>` : ''}
+        </div>
+      `;
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<p style="color:#dc3545; font-size:0.85rem;">Error cargando códigos.</p>';
+    console.error(e);
+  }
+}
+
+async function adminDeleteCode(code) {
+  if (!_isAdmin() || !_fbDb) return;
+  if (!confirm(`¿Eliminar el código "${code}"?`)) return;
+  try {
+    await _fbDb.collection('promoCodes').doc(code).delete();
+    showToast('Código eliminado.');
+    adminLoadCodes();
+  } catch(e) {
+    showToast('Error al eliminar.', 'error');
+  }
 }
 
 // ==========================================================================

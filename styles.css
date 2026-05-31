@@ -1332,4 +1332,146 @@ body { font-family: var(--font-main); background-color: var(--bg-color); color: 
   }
 }
 
+/* ==========================================================================
+   PANEL DE ADMIN
+   ========================================================================== */
+.admin-layout {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 30px 20px 60px;
+  overflow-y: auto;
+  background: radial-gradient(ellipse at top, rgba(255, 215, 0, 0.06) 0%, transparent 60%);
+}
 
+.admin-card {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 20px;
+  padding: 36px 30px;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255,215,0,0.05);
+  color: white;
+  text-align: center;
+}
+
+.admin-generator {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.admin-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.admin-amount-btn {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1.5px solid rgba(255, 215, 0, 0.35);
+  color: #ffd700;
+  padding: 8px 18px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.admin-amount-btn:hover,
+.admin-amount-btn.selected {
+  background: rgba(255, 215, 0, 0.25);
+  border-color: #ffd700;
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(255,215,0,0.3);
+}
+
+.admin-gen-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px;
+  background: linear-gradient(135deg, #ffd700, #ff9500);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 6px 20px rgba(255,215,0,0.3);
+}
+.admin-gen-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(255,215,0,0.45);
+}
+.admin-gen-btn:active {
+  transform: translateY(0);
+}
+
+.admin-result {
+  width: 100%;
+  margin-top: 24px;
+  background: rgba(255, 215, 0, 0.07);
+  border: 1.5px solid rgba(255, 215, 0, 0.3);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.admin-code-display {
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  letter-spacing: 6px;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6);
+  word-break: break-all;
+  text-align: center;
+}
+
+.admin-code-coins {
+  font-size: 1rem;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.admin-copy-btn {
+  margin-top: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 9px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.admin-copy-btn:hover {
+  background: rgba(255,255,255,0.15);
+  transform: scale(1.03);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

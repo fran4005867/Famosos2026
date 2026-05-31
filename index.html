@@ -25,6 +25,7 @@
             <button class="nav-tab" data-tab="packs" onclick="switchTab('packs')">📦 Sobres</button>
             <button class="nav-tab" data-tab="duplicates" onclick="switchTab('duplicates')">🔄 Repetidas <span class="dup-badge" id="dup-badge"></span></button>
             <button class="nav-tab" data-tab="codes" onclick="switchTab('codes')">🎟️ Códigos</button>
+            <button class="nav-tab hidden" id="admin-tab-btn" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
         </nav>
     </div>
     <div class="topbar-right">
@@ -169,6 +170,53 @@
         </div>
         
         <div id="code-msg" class="code-msg" style="font-weight:bold; font-size:1.2rem; min-height:30px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PESTAÑA: ADMIN (solo olanoagus@gmail.com) -->
+  <section class="tab-pane hidden" id="tab-admin">
+    <div class="admin-layout">
+      <div class="admin-card">
+        <div style="font-size:3rem; margin-bottom:10px;">⚙️</div>
+        <h2 style="font-family:'Orbitron',sans-serif; color:#ffd700; margin-bottom:6px;">Panel de Admin</h2>
+        <p style="color:#aaa; margin-bottom:28px; font-size:0.9rem;">Generá códigos promocionales para tus usuarios.</p>
+
+        <!-- GENERADOR -->
+        <div class="admin-generator">
+          <label style="color:#ccc; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px;">Cantidad de Monedas 🪙</label>
+          <div class="admin-amounts">
+            <button class="admin-amount-btn" onclick="setAdminAmount(100)">100</button>
+            <button class="admin-amount-btn" onclick="setAdminAmount(250)">250</button>
+            <button class="admin-amount-btn" onclick="setAdminAmount(500)">500</button>
+            <button class="admin-amount-btn" onclick="setAdminAmount(1000)">1000</button>
+            <button class="admin-amount-btn" onclick="setAdminAmount(2500)">2500</button>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <input type="number" id="admin-amount-input" placeholder="Monto personalizado..." min="1" max="99999"
+              style="flex:1; padding:12px; border-radius:8px; font-size:1rem; font-family:inherit; background:rgba(255,255,255,0.1); color:white; border:1.5px solid rgba(255,255,255,0.2);" />
+          </div>
+          <button onclick="adminGenerateCode()" class="admin-gen-btn">⚡ Generar Código</button>
+        </div>
+
+        <!-- CÓDIGO GENERADO -->
+        <div id="admin-result" class="admin-result hidden">
+          <p style="color:#aaa; font-size:0.85rem; margin-bottom:8px;">Código generado:</p>
+          <div class="admin-code-display" id="admin-code-display"></div>
+          <div class="admin-code-coins" id="admin-code-coins"></div>
+          <button onclick="adminCopyCode()" class="admin-copy-btn">📋 Copiar código</button>
+        </div>
+
+        <!-- LISTA DE CÓDIGOS -->
+        <div style="margin-top:30px; width:100%;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="color:#ffd700; font-family:'Orbitron',sans-serif; font-size:0.9rem;">Códigos Activos</h3>
+            <button onclick="adminLoadCodes()" style="background:none; border:1px solid #555; color:#aaa; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem;">🔄 Actualizar</button>
+          </div>
+          <div id="admin-codes-list" style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+            <p style="color:#555; font-size:0.85rem;">Cargando...</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
