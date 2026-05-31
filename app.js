@@ -262,16 +262,19 @@ function renderAlbumPage(justPastedKey = null) {
   document.getElementById('page-bg-left').style.background = bgStyle;
   document.getElementById('page-bg-right').style.background = bgStyleRight;
   
-  // Inyectar imagen de bandera como watermark decorativo (arriba-izquierda + abajo-derecha)
-  const flagPath = `${ALBUM_CONFIG.basePath}/${team.id}/bandera.png`;
-  document.getElementById('page-bg-left').innerHTML = `
-    <img src="${flagPath}" class="flag-watermark-img flag-top-left" onerror="this.style.display='none'" />
-    <img src="${flagPath}" class="flag-watermark-img" onerror="this.style.display='none'" />
-  `;
+  // Inyectar imagen de bandera como watermark decorativo si no es la página de Extra Stickers
+  if (team.id !== 'extrastickers') {
+    const flagPath = `${ALBUM_CONFIG.basePath}/${team.id}/bandera.png`;
+    document.getElementById('page-bg-left').innerHTML = `
+      <img src="${flagPath}" class="flag-watermark-img flag-top-left" onerror="this.style.display='none'" />
+      <img src="${flagPath}" class="flag-watermark-img" onerror="this.style.display='none'" />
+    `;
+  } else {
+    document.getElementById('page-bg-left').innerHTML = '';
+  }
   
   if (team.id === 'extrastickers') {
     document.getElementById('team-header').innerHTML = `
-      <img src="${ALBUM_CONFIG.basePath}/${team.id}/bandera.png" class="team-flag-img" onerror="this.style.display='none'" />
       <div class="we-are-text" style="color: #ffd700; text-shadow: 3px 3px 0px #000000; font-family: var(--font-title);">EXTRA<br/>STICKERS</div>
       <div class="federation-text" style="color: #ccc;">${team.federation}</div>
     `;
@@ -470,7 +473,15 @@ function revealCards() {
   let cardsGenerated = 0;
   
   while(cardsGenerated < 5) {
-    const team = ALBUM_CONFIG.teams[Math.floor(Math.random() * ALBUM_CONFIG.teams.length)];
+    // 1% de probabilidad de que cada carta sea Extra Sticker (promedia 1 de cada 20 sobres de 5 cartas: 5 * 1% = 5%)
+    let team;
+    if (Math.random() < 0.01) {
+      team = ALBUM_CONFIG.teams.find(t => t.id === 'extrastickers');
+    }
+    if (!team) {
+      const standardTeams = ALBUM_CONFIG.teams.filter(t => t.id !== 'extrastickers');
+      team = standardTeams[Math.floor(Math.random() * standardTeams.length)];
+    }
     const maxStickers = team.id === 'extrastickers' ? 5 : 11;
     const num = Math.floor(Math.random() * maxStickers) + 1;
     const cardKey = `${team.id}_${num}`;
