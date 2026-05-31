@@ -1,9 +1,9 @@
 # Simple Native PowerShell HTTP Server
 $listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("http://localhost:8000/")
+$listener.Prefixes.Add("http://localhost:8080/")
 try {
     $listener.Start()
-    Write-Host "Server started successfully on http://localhost:8000/"
+    Write-Host "Server started successfully on http://localhost:8080/"
 } catch {
     Write-Host "Failed to start listener: $_"
     Exit

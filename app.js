@@ -97,7 +97,8 @@ let state = {
   pasted: {},      // "equipoId_numero": true
   inventory: {},   // "equipoId_numero": cantidad
   openedPacksCount: 0,
-  dailyCooldown: null
+  dailyCooldown: null,
+  usedCodes: {}    // "codigo": true
 };
 
 let currentTeamIndex = 0;
@@ -140,6 +141,8 @@ function loadState() {
       }
     } catch(e){}
   }
+  // Asegurar que exista el objeto de códigos usados
+  state.usedCodes = state.usedCodes || {};
 }
 
 function saveState() {
@@ -540,22 +543,39 @@ function redeemCode() {
   // Limpiar mensaje previo
   msg.innerHTML = '';
 
+  if (!val) return;
+
+  // Inicializar por seguridad
+  state.usedCodes = state.usedCodes || {};
+
+  // Verificar si el código ya fue usado
+  if (state.usedCodes[val]) {
+    msg.innerHTML = "<span style='color:#dc3545'>⚠️ Este código ya fue utilizado.</span>";
+    showToast("Código ya utilizado.", "error");
+    return;
+  }
+  
   if (val === 'INFINITOPLATA') { 
     state.coins += 999999; 
+    state.usedCodes[val] = true;
     msg.innerHTML = "<span style='color:#ffd700'>🤑 ¡CHEAT ACTIVADO! +999,999 🪙</span>";
     showToast("Plata infinita activada.", "success");
   }
   else if (val === 'MUNDIAL2026') { 
     state.coins += 1000; 
+    state.usedCodes[val] = true;
     msg.innerHTML = "<span style='color:#28a745'>+1000 🪙</span>"; 
+    showToast("¡Código canjeado! +1000 🪙", "success");
   }
   else if (val === 'LEGEND') { 
     state.coins += 150; 
+    state.usedCodes[val] = true;
     msg.innerHTML = "<span style='color:#28a745'>+150 🪙</span>"; 
+    showToast("¡Código canjeado! +150 🪙", "success");
   }
   else { 
     msg.innerHTML = "<span style='color:#dc3545'>Código inválido o caducado.</span>"; 
-    return; 
+    return;
   }
   
   document.getElementById('code-input').value = '';
@@ -656,7 +676,7 @@ async function signOutUser() {
     _currentUser = null;
     renderUserTopbar();
     // Recargar estado local
-    state = { coins: 500, pasted: {}, inventory: {}, openedPacksCount: 0, dailyCooldown: null };
+    state = { coins: 500, pasted: {}, inventory: {}, openedPacksCount: 0, dailyCooldown: null, usedCodes: {} };
     loadState();
     updateTopBar();
     renderAlbumPage();
