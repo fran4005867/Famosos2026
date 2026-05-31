@@ -699,3 +699,50 @@ function _translateFirebaseError(code) {
   };
   return errors[code] || `❌ Error: ${code}`;
 }
+
+// ==========================================================================
+// MÚSICA DE FONDO
+// ==========================================================================
+let _musicEnabled = false;
+
+function toggleMusic() {
+  const audio = document.getElementById('bg-music');
+  const btn   = document.getElementById('music-toggle');
+  if (!audio) return;
+
+  if (_musicEnabled) {
+    audio.pause();
+    _musicEnabled = false;
+    if (btn) btn.textContent = '🔇';
+    showToast('Música desactivada', 'info');
+  } else {
+    audio.volume = 0.35;
+    audio.play().then(() => {
+      _musicEnabled = true;
+      if (btn) btn.textContent = '🔊';
+      showToast('♪ Música activada', 'success');
+    }).catch(() => {
+      showToast('Tocá la pantalla para activar la música', 'info');
+    });
+  }
+}
+
+// Intentar reproducir automáticamente tras la primera interacción del usuario
+(function startMusicOnInteraction() {
+  const startAudio = () => {
+    const audio = document.getElementById('bg-music');
+    const btn   = document.getElementById('music-toggle');
+    if (audio && !_musicEnabled) {
+      audio.volume = 0.35;
+      audio.play().then(() => {
+        _musicEnabled = true;
+        if (btn) btn.textContent = '🔊';
+      }).catch(() => {});
+    }
+    document.removeEventListener('click', startAudio);
+    document.removeEventListener('touchstart', startAudio);
+  };
+  document.addEventListener('click', startAudio, { once: true });
+  document.addEventListener('touchstart', startAudio, { once: true });
+})();
+

@@ -28,6 +28,7 @@
         </nav>
     </div>
     <div class="topbar-right">
+      <button id="music-toggle" class="music-toggle-btn" onclick="toggleMusic()" title="Música de fondo">🔇</button>
       <div class="topbar-user" id="topbar-user"></div>
       <div class="topbar-coins" id="topbar-coins">
         <span>🪙</span><span id="coins-display">500</span>
@@ -251,5 +252,6 @@
 <script src="firebase-config.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+<audio id="bg-music" src="mi-album/Landing Burn.mp3" loop></audio>
 </body>
 </html>
