@@ -889,3 +889,368 @@ body { font-family: var(--font-main); background-color: var(--bg-color); color: 
   color: #ffd700;
   text-decoration: underline;
 }
+
+/* ==========================================================================
+   DISEÑO RESPONSIVO (CELULARES Y TABLETS)
+   ========================================================================== */
+
+/* Ajustes globales de escala de figuritas en pantallas pequeñas */
+@media (max-width: 480px) {
+  :root {
+    --sticker-width: 90px;
+    --sticker-height: 126px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  :root {
+    --sticker-width: 100px;
+    --sticker-height: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* BODY y TABS */
+  body {
+    overflow-y: auto;
+  }
+  .tab-pane {
+    height: auto;
+    min-height: calc(100vh - 80px);
+    overflow-y: visible;
+  }
+
+  /* BARRA SUPERIOR RESPONSIVA */
+  .topbar {
+    flex-direction: column;
+    padding: 10px;
+    gap: 12px;
+    height: auto;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .topbar-left {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .topbar-title {
+    font-size: 1.4rem;
+    letter-spacing: 1.5px;
+  }
+  
+  .topbar-center {
+    width: 100%;
+    order: 3;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0 6px 0;
+  }
+  
+  .nav-tabs {
+    justify-content: flex-start;
+    display: inline-flex;
+    width: max-content;
+    gap: 8px;
+    padding: 0 5px;
+  }
+  
+  .nav-tab {
+    padding: 8px 14px;
+    font-size: 0.9rem;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0 5px;
+    gap: 10px;
+  }
+  
+  .topbar-coins {
+    font-size: 1.05rem;
+  }
+  
+  .topbar-progress {
+    font-size: 0.85rem;
+    gap: 8px;
+  }
+
+  .progress-bar-outer {
+    width: 80px;
+  }
+
+  /* DISEÑO DEL ÁLBUM APILADO VERTICALMENTE */
+  .album-container {
+    padding: 10px 5px;
+  }
+
+  .album-book-wrapper {
+    flex-direction: column;
+    gap: 15px;
+    padding: 0 10px;
+    width: 100%;
+  }
+
+  .album-book {
+    flex-direction: column;
+    width: 100%;
+    max-width: 440px;
+    height: auto;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    border-radius: 12px;
+  }
+
+  .book-spine {
+    display: none; /* Ocultar el lomo en vista vertical */
+  }
+
+  .album-page {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .page-left {
+    border-radius: 12px 12px 0 0;
+    border-bottom: 2px dashed rgba(0,0,0,0.15);
+  }
+
+  .page-right {
+    border-radius: 0 0 12px 12px;
+  }
+
+  .page-content {
+    padding: 25px 15px;
+    height: auto;
+  }
+
+  .page-content.right-content {
+    padding-left: 15px;
+  }
+
+  .we-are-text {
+    font-size: 2rem;
+  }
+
+  .team-flag-img {
+    width: 75px;
+    margin-bottom: 8px;
+  }
+
+  .federation-text {
+    font-size: 0.95rem;
+    padding: 2px 8px;
+  }
+
+  /* Ajustar grillas del álbum */
+  .left-grid, .right-grid {
+    grid-template-columns: repeat(3, var(--sticker-width));
+    grid-template-rows: repeat(2, var(--sticker-height));
+    gap: 10px;
+    margin: 15px auto;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .group-info-box {
+    width: 100%;
+    margin-top: 15px;
+    padding: 12px;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .group-title {
+    font-size: 1.2rem;
+  }
+
+  .group-flags {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .group-flag {
+    font-size: 1rem;
+    padding: 4px 8px;
+  }
+
+  /* Flechas de navegación flotantes laterales */
+  .nav-arrow {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    z-index: 1000;
+  }
+
+  .prev-arrow {
+    left: 8px;
+  }
+
+  .next-arrow {
+    right: 8px;
+  }
+
+  /* TIENDA DE SOBRES RESPONSIVA */
+  .packs-layout {
+    flex-direction: column;
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .packs-store {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+    padding: 20px 15px;
+    gap: 15px;
+  }
+
+  .packs-store h2 {
+    font-size: 1.4rem;
+    margin-bottom: 5px !important;
+    text-align: center;
+  }
+
+  .store-actions {
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .store-btn {
+    flex: 1;
+    padding: 12px 10px;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .store-btn-icon {
+    font-size: 1.8rem;
+  }
+
+  .store-btn-title {
+    font-size: 0.9rem;
+    letter-spacing: 0px;
+  }
+
+  .store-btn-sub {
+    font-size: 0.75rem;
+  }
+
+  .pack-stage-area {
+    min-height: 380px;
+    padding: 20px 10px;
+  }
+
+  .pack-idle-hint {
+    padding: 30px 20px;
+  }
+
+  .pack-envelope {
+    width: 200px;
+    height: 280px;
+  }
+
+  .revealed-cards {
+    gap: 15px;
+    padding: 15px 5px;
+  }
+
+  /* PESTAÑA REPETIDAS RESPONSIVA */
+  .dup-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .dup-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .dup-grid {
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* PESTAÑA CÓDIGOS RESPONSIVA */
+  .codes-layout {
+    min-height: 400px;
+    padding: 20px 15px !important;
+  }
+
+  .codes-card {
+    padding: 30px 20px !important;
+  }
+
+  .code-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .code-row input {
+    text-align: center;
+  }
+
+  .code-row button {
+    width: 100%;
+  }
+
+  /* MODAL DE LOGIN RESPONSIVO (HORIZONTAL -> VERTICAL) */
+  .auth-card {
+    flex-direction: column;
+    max-width: 92%;
+    margin: 15px auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .auth-panel-left {
+    flex: none;
+    width: 100%;
+    padding: 24px 20px;
+    border-right: none;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .auth-brand-title {
+    font-size: 1.6rem;
+    margin: 8px 0;
+  }
+
+  .auth-brand-desc {
+    display: none; /* Ocultar en celu para no estirar tanto */
+  }
+
+  .auth-brand-badges {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .auth-badge {
+    font-size: 0.72rem;
+    padding: 4px 8px;
+  }
+
+  .auth-panel-right {
+    padding: 24px 20px;
+  }
+
+  .auth-header h2 {
+    font-size: 1.3rem;
+  }
+}
+
