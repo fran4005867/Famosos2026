@@ -62,6 +62,16 @@ const ALBUM_CONFIG = {
             flags: ['MEX', 'POL', 'ARG', 'KSA']
         },
         {
+            id: 'colombia',
+            name: 'Colombia',
+            flag: '🇨🇴',
+            federation: 'Federación Colombiana de Fútbol',
+            group: 'GROUP H',
+            color1: '#fcd116',
+            color2: '#003893',
+            flags: ['COL', 'GRE', 'CIV', 'JPN']
+        },
+        {
             id: 'extrastickers',
             name: 'Extra Stickers',
             flag: '⭐',
