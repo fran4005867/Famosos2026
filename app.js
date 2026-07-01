@@ -48,7 +48,7 @@ async function handleAuthStateChanged(user) {
   if (adminBtn) {
     if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
       adminBtn.classList.remove('hidden');
-    } else if (user && user.email === 'olanoagus@gmail.com') {
+    } else if (user && user.email === 'franantolini3@gmail.com') {
       adminBtn.classList.remove('hidden');
     } else {
       adminBtn.classList.add('hidden');
@@ -1336,13 +1336,18 @@ function _updateTradeBadge(snap) {
   snap.forEach(doc => {
     const data = doc.data();
     if (data.creatorUid !== _currentUser.uid) {
-      // Contar solo si el usuario tiene la figurita solicitada
-      const canAccept = data.wantStickers.some(key => _getDuplicateCount(key) > 0);
+      // El usuario actual puede aceptar si tiene TODAS las figuritas solicitadas
+      const canAccept = data.wantStickers.every(key => _getDuplicateCount(key) > 0);
       if (canAccept) count++;
     }
   });
-  badge.textContent = count > 0 ? count : '';
-  badge.style.display = count > 0 ? 'inline-block' : 'none';
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
 }
 
 async function loadMyTrades() {
