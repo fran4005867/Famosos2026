@@ -7,7 +7,7 @@
 
 ## 🌐 Demo en Vivo
 
-Puedes acceder a la aplicación en vivo aquí: **[Famosos2026](https://jsaerospace.github.io/Famosos2026/)**
+Puedes acceder a la aplicación en vivo aquí: **[Famosos2026](https://fran4005867.github.io/Famosos2026/)**
 
 ## 📋 Descripción
 
@@ -112,7 +112,7 @@ Este proyecto está bajo la licencia MIT. Ver el archivo [LICENSE](LICENSE) para
 ## 🔗 Enlaces Útiles
 
 - [Repositorio Original](https://github.com/JSAerospace/Famosos2026)
-- [Sitio Web en Vivo](https://jsaerospace.github.io/Famosos2026/)
+- [Sitio Web en Vivo](https://fran4005867.github.io/Famosos2026/)
 
 ## 📧 Contacto
 
