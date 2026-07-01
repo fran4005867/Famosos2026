@@ -46,7 +46,9 @@ async function handleAuthStateChanged(user) {
   // Mostrar tab de admin solo para el administrador
   const adminBtn = document.getElementById('admin-tab-btn');
   if (adminBtn) {
-    if (user && user.email === 'olanoagus@gmail.com') {
+    if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
+      adminBtn.classList.remove('hidden');
+    } else if (user && user.email === 'olanoagus@gmail.com') {
       adminBtn.classList.remove('hidden');
     } else {
       adminBtn.classList.add('hidden');
@@ -124,10 +126,16 @@ let state = {
   inventory: {},   // "equipoId_numero": cantidad
   openedPacksCount: 0,
   dailyCooldown: null,
-  usedCodes: {}    // "codigo": true
+  usedCodes: {},    // "codigo": true
+  tradesToday: 0,   // intercambios realizados hoy
+  tradeDate: null   // fecha del último reset de tradesToday
 };
 
 let currentTeamIndex = 0;
+let _tradeMode = 'single'; // 'single' | 'multi'
+let _selectedOffer = [];   // keys de figuritas ofrecidas
+let _selectedWant = [];    // keys de figuritas pedidas
+let _tradesUnsubscribe = null; // para limpiar listener de Firestore
 
 // Manejador global para probar múltiples extensiones si la primera falla (.png -> .jpg -> .jpeg etc)
 window.handleImageError = function(img, basePath) {
@@ -240,6 +248,12 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTeamIndicators();
   updateTimer();
   
+  // Si Firebase está desactivado localmente, mostrar la pestaña de admin de una vez
+  if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
+    const adminBtn = document.getElementById('admin-tab-btn');
+    if (adminBtn) adminBtn.classList.remove('hidden');
+  }
+  
   // Iniciar la precarga en segundo plano tras inicializar la app
   preloadAllStickers();
 });
@@ -259,6 +273,14 @@ function loadState() {
   }
   // Asegurar que exista el objeto de códigos usados
   state.usedCodes = state.usedCodes || {};
+  state.tradesToday = state.tradesToday || 0;
+  state.tradeDate = state.tradeDate || null;
+  // Reset diario de trades
+  const todayStr = new Date().toISOString().slice(0, 10);
+  if (state.tradeDate !== todayStr) {
+    state.tradesToday = 0;
+    state.tradeDate = todayStr;
+  }
 }
 
 function saveState() {
@@ -296,6 +318,7 @@ function switchTab(tabId) {
   
   if (tabId === 'album') renderAlbumPage();
   if (tabId === 'duplicates') renderDuplicates();
+  if (tabId === 'trade') renderTradePage();
   if (tabId === 'admin') adminLoadCodes();
 }
 
@@ -776,6 +799,9 @@ async function redeemCode() {
 const ADMIN_EMAIL = 'olanoagus@gmail.com';
 
 function _isAdmin() {
+  if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
+    return true; // Acceso total si Firebase está desactivado localmente
+  }
   return _currentUser && _currentUser.email === ADMIN_EMAIL;
 }
 
@@ -1027,6 +1053,502 @@ function toggleMusic() {
         console.warn('[Music] play() blocked:', err);
       });
     }
+  }
+}
+
+// ==========================================================================
+// INTERCAMBIO DE FIGURITAS
+// ==========================================================================
+const MAX_TRADES_PER_DAY = 3;
+
+function renderTradePage() {
+  const loginPrompt = document.getElementById('trade-login-prompt');
+  const mainContent = document.getElementById('trade-main-content');
+  if (!loginPrompt || !mainContent) return;
+
+  if (!_currentUser) {
+    loginPrompt.classList.remove('hidden');
+    mainContent.classList.add('hidden');
+    return;
+  }
+
+  loginPrompt.classList.add('hidden');
+  mainContent.classList.remove('hidden');
+
+  _selectedOffer = [];
+  _selectedWant = [];
+  _tradeMode = 'single';
+
+  // Reset mode toggle UI
+  document.getElementById('trade-mode-single').classList.add('active');
+  document.getElementById('trade-mode-multi').classList.remove('active');
+
+  updateTradeDailyLimit();
+  populateTradeSelectors();
+  updateTradePublishBtn();
+  loadOpenTrades();
+  loadMyTrades();
+}
+
+function updateTradeDailyLimit() {
+  // Reset diario si cambió el día
+  const todayStr = new Date().toISOString().slice(0, 10);
+  if (state.tradeDate !== todayStr) {
+    state.tradesToday = 0;
+    state.tradeDate = todayStr;
+    saveState();
+  }
+  const el = document.getElementById('trade-daily-limit');
+  if (!el) return;
+  el.textContent = `${state.tradesToday}/${MAX_TRADES_PER_DAY} intercambios hoy`;
+  if (state.tradesToday >= MAX_TRADES_PER_DAY) {
+    el.style.color = '#dc3545';
+  } else if (state.tradesToday >= 2) {
+    el.style.color = '#ffa500';
+  } else {
+    el.style.color = '#28a745';
+  }
+}
+
+function setTradeMode(mode) {
+  _tradeMode = mode;
+  _selectedOffer = [];
+  _selectedWant = [];
+  document.getElementById('trade-mode-single').classList.toggle('active', mode === 'single');
+  document.getElementById('trade-mode-multi').classList.toggle('active', mode === 'multi');
+  populateTradeSelectors();
+  updateTradePublishBtn();
+}
+
+function _getStickerLabel(key) {
+  const parts = key.split('_');
+  const teamId = parts[0];
+  const num = parts[1];
+  const team = ALBUM_CONFIG.teams.find(t => t.id === teamId);
+  return team ? `${team.flag} ${team.name} #${num}` : key;
+}
+
+function _getDuplicateCount(key) {
+  const inv = state.inventory[key] || 0;
+  if (state.pasted[key]) return inv;
+  return Math.max(0, inv - 1);
+}
+
+function populateTradeSelectors() {
+  const offerContainer = document.getElementById('trade-offer-selector');
+  const wantContainer = document.getElementById('trade-want-selector');
+  if (!offerContainer || !wantContainer) return;
+
+  offerContainer.innerHTML = '';
+  wantContainer.innerHTML = '';
+
+  // --- OFREZCO: figuritas repetidas ---
+  let hasOffer = false;
+  ALBUM_CONFIG.teams.forEach(team => {
+    const max = team.id === 'extrastickers' ? 6 : 11;
+    for (let i = 1; i <= max; i++) {
+      const key = `${team.id}_${i}`;
+      const dupCount = _getDuplicateCount(key);
+      if (dupCount > 0) {
+        hasOffer = true;
+        const chip = _createTradeChip(key, team, i, dupCount, 'offer');
+        offerContainer.appendChild(chip);
+      }
+    }
+  });
+  if (!hasOffer) {
+    offerContainer.innerHTML = '<p style="color:#666; font-size:0.85rem; text-align:center; padding:20px;">No ten\u00e9s figuritas repetidas para ofrecer.</p>';
+  }
+
+  // --- PIDO: figuritas que NO tengo ---
+  let hasWant = false;
+  ALBUM_CONFIG.teams.forEach(team => {
+    const max = team.id === 'extrastickers' ? 6 : 11;
+    for (let i = 1; i <= max; i++) {
+      const key = `${team.id}_${i}`;
+      const hasPasted = !!state.pasted[key];
+      const hasInInventory = (state.inventory[key] || 0) > 0;
+      if (!hasPasted && !hasInInventory) {
+        hasWant = true;
+        const chip = _createTradeChip(key, team, i, 0, 'want');
+        wantContainer.appendChild(chip);
+      }
+    }
+  });
+  if (!hasWant) {
+    wantContainer.innerHTML = '<p style="color:#666; font-size:0.85rem; text-align:center; padding:20px;">\u00a1Ten\u00e9s todas las figuritas!</p>';
+  }
+}
+
+function _createTradeChip(key, team, num, count, side) {
+  const chip = document.createElement('div');
+  chip.className = 'trade-chip';
+  chip.dataset.key = key;
+  chip.dataset.side = side;
+
+  const basePath = `${ALBUM_CONFIG.basePath}/${team.id}/${num}`;
+  const imgSrc = getStickerImgSrc(team.id, num);
+
+  chip.innerHTML = `
+    ${count > 0 ? `<div class="trade-sticker-count">${count}</div>` : ''}
+    <img src="${imgSrc}" onerror="window.handleImageError(this, '${basePath}')" onload="window.handleImageSuccess(this, '${basePath}')" />
+    <div class="chip-label">${team.flag} #${num}</div>
+  `;
+
+  chip.onclick = () => toggleTradeChip(key, side);
+  return chip;
+}
+
+function toggleTradeChip(key, side) {
+  const arr = side === 'offer' ? _selectedOffer : _selectedWant;
+  const idx = arr.indexOf(key);
+
+  if (idx >= 0) {
+    // Deseleccionar
+    arr.splice(idx, 1);
+  } else {
+    if (_tradeMode === 'single') {
+      // En modo single, solo 1 seleccionada
+      arr.length = 0;
+      arr.push(key);
+    } else {
+      // En modo multi, limitar a 5 máximo por lado
+      if (arr.length >= 5) {
+        showToast('Máximo 5 figuritas por lado.', 'error');
+        return;
+      }
+      arr.push(key);
+    }
+  }
+
+  // Actualizar UI de chips
+  const containerId = side === 'offer' ? 'trade-offer-selector' : 'trade-want-selector';
+  document.querySelectorAll(`#${containerId} .trade-chip`).forEach(chip => {
+    const isSelected = arr.includes(chip.dataset.key);
+    chip.classList.toggle('selected', isSelected);
+  });
+
+  updateTradePublishBtn();
+}
+
+function updateTradePublishBtn() {
+  const btn = document.getElementById('trade-publish-btn');
+  if (!btn) return;
+  const canPublish = _selectedOffer.length > 0 && _selectedWant.length > 0 && state.tradesToday < MAX_TRADES_PER_DAY;
+  btn.disabled = !canPublish;
+}
+
+async function publishTrade() {
+  if (!_currentUser || !_fbDb) {
+    showToast('Necesitás iniciar sesión.', 'error');
+    return;
+  }
+  if (_selectedOffer.length === 0 || _selectedWant.length === 0) {
+    showToast('Seleccioná al menos una figurita de cada lado.', 'error');
+    return;
+  }
+  if (state.tradesToday >= MAX_TRADES_PER_DAY) {
+    showToast('Alcanzaste el límite diario de intercambios.', 'error');
+    return;
+  }
+
+  // Verificar que todavía tenemos las repetidas
+  for (const key of _selectedOffer) {
+    if (_getDuplicateCount(key) <= 0) {
+      showToast(`Ya no tenés repetidas de ${_getStickerLabel(key)}.`, 'error');
+      return;
+    }
+  }
+
+  const tradeData = {
+    creatorUid: _currentUser.uid,
+    creatorEmail: _currentUser.email,
+    creatorName: _currentUser.displayName || _currentUser.email.split('@')[0],
+    offerStickers: _selectedOffer,
+    wantStickers: _selectedWant,
+    status: 'open',
+    createdAt: Date.now()
+  };
+
+  try {
+    await _fbDb.collection('trades').add(tradeData);
+    showToast('\u00a1Oferta publicada en el mercado!', 'success');
+    _selectedOffer = [];
+    _selectedWant = [];
+    populateTradeSelectors();
+    updateTradePublishBtn();
+    loadMyTrades();
+  } catch (e) {
+    console.error('[Trade] Error al publicar:', e);
+    showToast('Error al publicar la oferta.', 'error');
+  }
+}
+
+async function loadOpenTrades() {
+  if (!_fbDb || !_currentUser) return;
+  const grid = document.getElementById('trade-market-grid');
+  const emptyEl = document.getElementById('trade-market-empty');
+  if (!grid) return;
+
+  // Limpiar listener anterior
+  if (_tradesUnsubscribe) {
+    _tradesUnsubscribe();
+    _tradesUnsubscribe = null;
+  }
+
+  try {
+    const query = _fbDb.collection('trades')
+      .where('status', '==', 'open')
+      .orderBy('createdAt', 'desc')
+      .limit(50);
+
+    _tradesUnsubscribe = query.onSnapshot(snap => {
+      grid.innerHTML = '';
+      let hasCards = false;
+
+      snap.forEach(doc => {
+        const data = doc.data();
+        // No mostrar mis propias ofertas aquí
+        if (data.creatorUid === _currentUser.uid) return;
+
+        hasCards = true;
+        const card = _createTradeOfferCard(doc.id, data, false);
+        grid.appendChild(card);
+      });
+
+      if (!hasCards) {
+        grid.innerHTML = `<div class="trade-empty-state"><div style="font-size:3rem;">\ud83c\udfdc\ufe0f</div><p>No hay ofertas de otros jugadores en este momento.</p></div>`;
+      }
+
+      // Actualizar badge
+      _updateTradeBadge(snap);
+    });
+  } catch (e) {
+    console.error('[Trade] Error cargando trades:', e);
+    grid.innerHTML = '<p style="color:#dc3545;">Error al cargar el mercado.</p>';
+  }
+}
+
+function _updateTradeBadge(snap) {
+  const badge = document.getElementById('trade-badge');
+  if (!badge) return;
+  let count = 0;
+  snap.forEach(doc => {
+    const data = doc.data();
+    if (data.creatorUid !== _currentUser.uid) {
+      // Contar solo si el usuario tiene la figurita solicitada
+      const canAccept = data.wantStickers.some(key => _getDuplicateCount(key) > 0);
+      if (canAccept) count++;
+    }
+  });
+  badge.textContent = count > 0 ? count : '';
+  badge.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+async function loadMyTrades() {
+  if (!_fbDb || !_currentUser) return;
+  const container = document.getElementById('trade-my-offers');
+  if (!container) return;
+
+  try {
+    const snap = await _fbDb.collection('trades')
+      .where('creatorUid', '==', _currentUser.uid)
+      .where('status', '==', 'open')
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<div class="trade-empty-state"><div style="font-size:3rem;">\ud83d\udced</div><p>No ten\u00e9s ofertas pendientes.</p></div>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const card = _createTradeOfferCard(doc.id, doc.data(), true);
+      container.appendChild(card);
+    });
+  } catch (e) {
+    console.error('[Trade] Error cargando mis ofertas:', e);
+  }
+}
+
+function _createTradeOfferCard(tradeId, data, isMine) {
+  const card = document.createElement('div');
+  card.className = 'trade-offer-card';
+
+  // Generar thumbnails de figuritas ofrecidas
+  const offerThumbs = data.offerStickers.map(key => {
+    const parts = key.split('_');
+    const imgSrc = getStickerImgSrc(parts[0], parts[1]);
+    const label = _getStickerLabel(key);
+    return `<div class="offer-sticker-thumb" title="${label}"><img src="${imgSrc}" onerror="this.style.display='none'" /></div>`;
+  }).join('');
+
+  // Generar thumbnails de figuritas pedidas
+  const wantThumbs = data.wantStickers.map(key => {
+    const parts = key.split('_');
+    const imgSrc = getStickerImgSrc(parts[0], parts[1]);
+    const label = _getStickerLabel(key);
+    return `<div class="offer-sticker-thumb" title="${label}"><img src="${imgSrc}" onerror="this.style.display='none'" /></div>`;
+  }).join('');
+
+  // Verificar si el usuario puede aceptar (tiene las figuritas pedidas)
+  const canAccept = !isMine && data.wantStickers.every(key => _getDuplicateCount(key) > 0);
+
+  const creatorDisplay = data.creatorName || data.creatorEmail.split('@')[0];
+  const timeAgo = _timeAgo(data.createdAt);
+
+  let actionBtn = '';
+  if (isMine) {
+    actionBtn = `<button class="trade-cancel-btn" onclick="cancelTrade('${tradeId}')">\u274c Cancelar</button>`;
+  } else if (canAccept) {
+    actionBtn = `<button class="trade-accept-btn" onclick="acceptTrade('${tradeId}')">\u2705 Aceptar Intercambio</button>`;
+  } else {
+    actionBtn = `<button class="trade-accept-btn" disabled title="No ten\u00e9s las figuritas que pide">\ud83d\udeab No ten\u00e9s lo que pide</button>`;
+  }
+
+  card.innerHTML = `
+    <div class="offer-creator">
+      <span>${isMine ? '\ud83d\udccc T\u00fa' : '\ud83d\udc64 ' + creatorDisplay}</span>
+      <span class="offer-time">${timeAgo}</span>
+    </div>
+    <div class="offer-stickers">
+      <div class="offer-side offer-give">
+        <div class="offer-side-label">Ofrece</div>
+        <div class="offer-thumbs">${offerThumbs}</div>
+      </div>
+      <div class="offer-arrow">\u27a1\ufe0f</div>
+      <div class="offer-side offer-receive">
+        <div class="offer-side-label">Pide</div>
+        <div class="offer-thumbs">${wantThumbs}</div>
+      </div>
+    </div>
+    <div class="offer-actions">${actionBtn}</div>
+  `;
+
+  return card;
+}
+
+function _timeAgo(timestamp) {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Ahora';
+  if (mins < 60) return `Hace ${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days}d`;
+}
+
+async function acceptTrade(tradeId) {
+  if (!_currentUser || !_fbDb) {
+    showToast('Necesit\u00e1s iniciar sesi\u00f3n.', 'error');
+    return;
+  }
+  if (state.tradesToday >= MAX_TRADES_PER_DAY) {
+    showToast('Alcanzaste el l\u00edmite diario de intercambios.', 'error');
+    return;
+  }
+
+  try {
+    const tradeDoc = await _fbDb.collection('trades').doc(tradeId).get();
+    if (!tradeDoc.exists) {
+      showToast('La oferta ya no existe.', 'error');
+      return;
+    }
+    const trade = tradeDoc.data();
+    if (trade.status !== 'open') {
+      showToast('La oferta ya no est\u00e1 disponible.', 'error');
+      return;
+    }
+    if (trade.creatorUid === _currentUser.uid) {
+      showToast('No pod\u00e9s aceptar tu propia oferta.', 'error');
+      return;
+    }
+
+    // Verificar que el aceptante tiene las figuritas pedidas
+    for (const key of trade.wantStickers) {
+      if (_getDuplicateCount(key) <= 0) {
+        showToast(`No ten\u00e9s repetidas de ${_getStickerLabel(key)}.`, 'error');
+        return;
+      }
+    }
+
+    // === EJECUTAR INTERCAMBIO ===
+    // 1. Actualizar inventario del ACEPTANTE (usuario actual)
+    //    - Pierde las figuritas que el creador pidió
+    //    - Gana las figuritas que el creador ofreció
+    for (const key of trade.wantStickers) {
+      state.inventory[key] = (state.inventory[key] || 0) - 1;
+      if (state.inventory[key] <= 0) delete state.inventory[key];
+    }
+    for (const key of trade.offerStickers) {
+      state.inventory[key] = (state.inventory[key] || 0) + 1;
+    }
+
+    // 2. Incrementar contador diario
+    state.tradesToday++;
+    saveState();
+
+    // 3. Actualizar el inventario del CREADOR en Firestore
+    const creatorAlbumDoc = await _fbDb.collection('albums').doc(trade.creatorUid).get();
+    if (creatorAlbumDoc.exists) {
+      const creatorState = creatorAlbumDoc.data();
+      const creatorInv = creatorState.inventory || {};
+
+      // El creador pierde lo que ofreció
+      for (const key of trade.offerStickers) {
+        creatorInv[key] = (creatorInv[key] || 0) - 1;
+        if (creatorInv[key] <= 0) delete creatorInv[key];
+      }
+      // El creador gana lo que el aceptante le dio
+      for (const key of trade.wantStickers) {
+        creatorInv[key] = (creatorInv[key] || 0) + 1;
+      }
+
+      // Incrementar trades del creador
+      const creatorTradesToday = (creatorState.tradesToday || 0) + 1;
+
+      await _fbDb.collection('albums').doc(trade.creatorUid).update({
+        inventory: creatorInv,
+        tradesToday: creatorTradesToday
+      });
+    }
+
+    // 4. Marcar trade como completado
+    await _fbDb.collection('trades').doc(tradeId).update({
+      status: 'completed',
+      acceptedBy: _currentUser.uid,
+      acceptedByEmail: _currentUser.email,
+      completedAt: Date.now()
+    });
+
+    showToast('\u00a1Intercambio realizado con \u00e9xito! \ud83c\udf89', 'success');
+    updateTradeDailyLimit();
+    populateTradeSelectors();
+    updateTopBar();
+    loadMyTrades();
+
+  } catch (e) {
+    console.error('[Trade] Error al aceptar intercambio:', e);
+    showToast('Error al procesar el intercambio.', 'error');
+  }
+}
+
+async function cancelTrade(tradeId) {
+  if (!_currentUser || !_fbDb) return;
+  if (!confirm('\u00bfCancel\u00e1s esta oferta de intercambio?')) return;
+
+  try {
+    await _fbDb.collection('trades').doc(tradeId).update({
+      status: 'cancelled',
+      cancelledAt: Date.now()
+    });
+    showToast('Oferta cancelada.', 'success');
+    loadMyTrades();
+  } catch (e) {
+    console.error('[Trade] Error al cancelar:', e);
+    showToast('Error al cancelar la oferta.', 'error');
   }
 }
 

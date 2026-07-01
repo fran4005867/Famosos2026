@@ -24,6 +24,7 @@
             <button class="nav-tab active" data-tab="album" onclick="switchTab('album')">📖 Álbum</button>
             <button class="nav-tab" data-tab="packs" onclick="switchTab('packs')">📦 Sobres</button>
             <button class="nav-tab" data-tab="duplicates" onclick="switchTab('duplicates')">🔄 Repetidas <span class="dup-badge" id="dup-badge"></span></button>
+            <button class="nav-tab" data-tab="trade" onclick="switchTab('trade')">🔀 Intercambio <span class="trade-badge" id="trade-badge"></span></button>
             <button class="nav-tab" data-tab="codes" onclick="switchTab('codes')">🎟️ Códigos</button>
             <button class="nav-tab hidden" id="admin-tab-btn" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
         </nav>
@@ -152,6 +153,85 @@
       </div>
       <div class="dup-grid-area">
         <div class="dup-grid" id="dup-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PESTAÑA: INTERCAMBIO -->
+  <section class="tab-pane hidden" id="tab-trade">
+    <div class="trade-layout">
+
+      <!-- Mensaje para invitados -->
+      <div class="trade-login-prompt hidden" id="trade-login-prompt">
+        <div class="trade-login-icon">🔒</div>
+        <h2>Iniciá sesión para intercambiar</h2>
+        <p>Necesitás una cuenta para publicar y aceptar intercambios con otros jugadores.</p>
+        <button class="auth-btn submit-btn" onclick="toggleAuthModal(true)" style="max-width:300px; margin-top:15px;">🔑 INGRESAR</button>
+      </div>
+
+      <!-- Contenido principal (solo logueados) -->
+      <div id="trade-main-content" class="hidden">
+
+        <!-- CREAR OFERTA -->
+        <div class="trade-section-header">
+          <h2>📤 Crear Oferta</h2>
+          <div class="trade-daily-limit" id="trade-daily-limit">0/3 intercambios hoy</div>
+        </div>
+
+        <div class="trade-create-card">
+          <!-- Toggle modo -->
+          <div class="trade-mode-toggle">
+            <button class="trade-mode-btn active" id="trade-mode-single" onclick="setTradeMode('single')">1️⃣ Una figurita</button>
+            <button class="trade-mode-btn" id="trade-mode-multi" onclick="setTradeMode('multi')">📦 Varias figuritas</button>
+          </div>
+
+          <div class="trade-columns">
+            <!-- Columna OFREZCO -->
+            <div class="trade-column">
+              <div class="trade-column-title offer-title">🟢 OFREZCO</div>
+              <div class="trade-sticker-selector" id="trade-offer-selector">
+                <!-- JS inyecta chips de figuritas repetidas -->
+              </div>
+            </div>
+
+            <!-- Flecha -->
+            <div class="trade-arrow">⇄</div>
+
+            <!-- Columna PIDO -->
+            <div class="trade-column">
+              <div class="trade-column-title want-title">🔴 PIDO</div>
+              <div class="trade-sticker-selector" id="trade-want-selector">
+                <!-- JS inyecta chips de figuritas faltantes -->
+              </div>
+            </div>
+          </div>
+
+          <button class="trade-publish-btn" id="trade-publish-btn" onclick="publishTrade()" disabled>📢 Publicar Oferta</button>
+        </div>
+
+        <!-- MERCADO -->
+        <div class="trade-section-header" style="margin-top:30px;">
+          <h2>🏪 Mercado de Intercambios</h2>
+          <button onclick="loadOpenTrades()" style="background:none; border:1px solid #555; color:#aaa; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem;">🔄 Actualizar</button>
+        </div>
+        <div class="trade-market-grid" id="trade-market-grid">
+          <div class="trade-empty-state" id="trade-market-empty">
+            <div style="font-size:3rem;">🏜️</div>
+            <p>No hay ofertas disponibles en este momento.</p>
+          </div>
+        </div>
+
+        <!-- MIS OFERTAS -->
+        <div class="trade-section-header" style="margin-top:30px;">
+          <h2>📋 Mis Ofertas Pendientes</h2>
+        </div>
+        <div class="trade-my-offers" id="trade-my-offers">
+          <div class="trade-empty-state" id="trade-my-empty">
+            <div style="font-size:3rem;">📭</div>
+            <p>No tenés ofertas pendientes.</p>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>

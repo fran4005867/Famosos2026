@@ -1653,3 +1653,696 @@ body { font-family: var(--font-main); background-color: var(--bg-color); color: 
     margin-top: 8px !important;
   }
 }
+
+/* ==========================================================================
+   TRADE / EXCHANGE MECHANIC
+   ========================================================================== */
+
+/* --- Pulse-gold keyframe (used by arrow & glow accents) --- */
+@keyframes pulse-gold {
+  0%, 100% {
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.15);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 18px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.35);
+    transform: scale(1.12);
+  }
+}
+
+/* 1. Main layout */
+.trade-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-height: 100%;
+  overflow-y: auto;
+  background: radial-gradient(ellipse at top, rgba(255, 215, 0, 0.05) 0%, transparent 55%);
+}
+
+/* 2. Section header */
+.trade-section-header {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  text-shadow: 0 2px 8px rgba(255, 215, 0, 0.25);
+}
+
+.trade-section-header .icon {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.4));
+}
+
+/* 3. Create-trade card (glassmorphism) */
+.trade-create-card {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid rgba(255, 215, 0, 0.18);
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 700px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
+              inset 0 1px 1px rgba(255, 255, 255, 0.06),
+              0 0 40px rgba(255, 215, 0, 0.06);
+  color: white;
+  margin-bottom: 36px;
+}
+
+/* 4. Mode toggle (1:1 / Multiple) */
+.trade-mode-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+
+.trade-mode-toggle button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 24px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.trade-mode-toggle button.active {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.15));
+  color: #ffd700;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.15);
+}
+
+.trade-mode-toggle button:hover:not(.active) {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* 5. Trade columns container */
+.trade-columns {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* 6. Individual column */
+.trade-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.trade-column:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* 7. Column titles */
+.trade-column-title {
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.trade-column-title.offer {
+  color: #4ade80;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.25);
+}
+
+.trade-column-title.want {
+  color: #fb923c;
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.25);
+}
+
+/* 8. Sticker selector (scrollable grid) */
+.trade-sticker-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 215, 0, 0.2) transparent;
+}
+
+.trade-sticker-selector::-webkit-scrollbar {
+  width: 5px;
+}
+
+.trade-sticker-selector::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.trade-sticker-selector::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.2);
+  border-radius: 10px;
+}
+
+/* 9. Individual sticker chip */
+.trade-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.trade-chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 215, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 10. Selected chip */
+.trade-chip.selected {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.08);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.2),
+              inset 0 0 10px rgba(255, 215, 0, 0.05);
+}
+
+/* 11. Chip thumbnail */
+.trade-chip img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+/* 12. Chip label */
+.trade-chip .chip-label {
+  font-family: var(--font-main);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  line-height: 1.15;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 13. Trade arrow between columns */
+.trade-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  color: #ffd700;
+  flex-shrink: 0;
+  align-self: center;
+  animation: pulse-gold 2.5s ease-in-out infinite;
+  user-select: none;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
+}
+
+/* 14. Publish button */
+.trade-publish-btn {
+  width: 100%;
+  max-width: 700px;
+  margin-top: 20px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #ffd700, #ff9500);
+  color: #12051a;
+  border: none;
+  border-radius: 14px;
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.trade-publish-btn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 35px rgba(255, 215, 0, 0.45);
+  filter: brightness(1.1);
+}
+
+.trade-publish-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* 15. Publish button disabled */
+.trade-publish-btn:disabled {
+  background: linear-gradient(135deg, #555, #444);
+  color: #888;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: grayscale(0.8);
+}
+
+/* 16. Daily limit indicator */
+.trade-daily-limit {
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}
+
+.trade-daily-limit.limit-ok {
+  color: #4ade80;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+}
+
+.trade-daily-limit.limit-warn {
+  color: #fb923c;
+  text-shadow: 0 0 8px rgba(251, 146, 60, 0.2);
+}
+
+.trade-daily-limit.limit-max {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.2);
+}
+
+/* 17. Market section */
+.trade-market-section {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 12px;
+}
+
+/* 18. Market grid */
+.trade-market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+/* 19. Offer card */
+.trade-offer-card {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: white;
+}
+
+.trade-offer-card:hover {
+  border-color: rgba(255, 215, 0, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55),
+              0 0 20px rgba(255, 215, 0, 0.06);
+}
+
+/* 20. Creator name */
+.trade-offer-card .offer-creator {
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-offer-card .offer-creator::before {
+  content: '👤';
+  font-size: 0.9rem;
+}
+
+/* 21. Stickers display row */
+.trade-offer-card .offer-stickers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+/* 22. Sticker thumbnail in offer */
+.trade-offer-card .offer-sticker-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.trade-offer-card .offer-sticker-thumb:hover {
+  transform: scale(1.1);
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+/* 23. Arrow in offer card */
+.trade-offer-card .offer-arrow {
+  font-size: 1.3rem;
+  color: #ffd700;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3));
+  user-select: none;
+}
+
+/* 24. Accept button */
+.trade-accept-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-family: var(--font-title);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+}
+
+.trade-accept-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 22px rgba(34, 197, 94, 0.4);
+  filter: brightness(1.1);
+}
+
+.trade-accept-btn:active {
+  transform: translateY(1px);
+}
+
+/* 25. Cancel button */
+.trade-cancel-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-family: var(--font-title);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.trade-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #f87171;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+/* 26. Empty state */
+.trade-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  text-align: center;
+  width: 100%;
+}
+
+.trade-empty-state .empty-icon {
+  font-size: 3.5rem;
+  opacity: 0.3;
+  filter: grayscale(0.5);
+}
+
+.trade-empty-state .empty-text {
+  font-family: var(--font-main);
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* 27. My offers section */
+.trade-my-offers {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* 28. Login prompt */
+.trade-login-prompt {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 215, 0, 0.15);
+  border-radius: 20px;
+  padding: 48px 32px;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5),
+              0 0 30px rgba(255, 215, 0, 0.05);
+}
+
+.trade-login-prompt .lock-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.2));
+}
+
+.trade-login-prompt p {
+  font-family: var(--font-main);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.trade-login-prompt .login-cta-btn {
+  background: linear-gradient(135deg, #ffd700, #ffa500);
+  color: #12051a;
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 0.9rem;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(255, 215, 0, 0.2);
+}
+
+.trade-login-prompt .login-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(255, 215, 0, 0.4);
+}
+
+/* 29. Trade badge (nav tab notification) */
+.trade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #000;
+  font-family: var(--font-title);
+  font-size: 0.65rem;
+  font-weight: 900;
+  border-radius: 20px;
+  margin-left: 6px;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.35);
+  animation: floatBounce 2s infinite ease-in-out;
+  vertical-align: middle;
+}
+
+/* 30. Sticker count badge on chips */
+.trade-sticker-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: white;
+  font-family: var(--font-title);
+  font-size: 0.6rem;
+  font-weight: 900;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+  border: 1.5px solid rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+/* 32. Multi-preview (stacked thumbnails) */
+.trade-multi-preview {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.trade-multi-preview .offer-sticker-thumb {
+  margin-left: -10px;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease, z-index 0s;
+}
+
+.trade-multi-preview .offer-sticker-thumb:first-child {
+  margin-left: 0;
+}
+
+.trade-multi-preview .offer-sticker-thumb:hover {
+  z-index: 5;
+  transform: scale(1.15) translateY(-4px);
+}
+
+/* 33. Status tag */
+.trade-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.trade-status-tag.status-open {
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+.trade-status-tag.status-completed {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.trade-status-tag.status-cancelled {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+/* --- Responsive adjustments for trade section --- */
+@media (max-width: 768px) {
+  .trade-layout {
+    padding: 20px 12px 40px;
+  }
+
+  .trade-create-card {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .trade-columns {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .trade-arrow {
+    transform: rotate(90deg);
+    font-size: 1.6rem;
+    margin: 4px 0;
+  }
+
+  .trade-market-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .trade-section-header {
+    font-size: 1.15rem;
+  }
+
+  .trade-sticker-selector {
+    grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trade-mode-toggle button {
+    padding: 8px 16px;
+    font-size: 0.75rem;
+  }
+
+  .trade-offer-card .offer-sticker-thumb {
+    width: 38px;
+    height: 38px;
+  }
+
+  .trade-publish-btn {
+    font-size: 0.9rem;
+    padding: 14px 18px;
+  }
+}
