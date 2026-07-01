@@ -796,7 +796,7 @@ async function redeemCode() {
 // ==========================================================================
 // PANEL DE ADMIN
 // ==========================================================================
-const ADMIN_EMAIL = 'olanoagus@gmail.com';
+const ADMIN_EMAIL = 'franantolini3@gmail.com';
 
 function _isAdmin() {
   if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
