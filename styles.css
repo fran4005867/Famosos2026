@@ -2025,21 +2025,58 @@ body { font-family: var(--font-main); background-color: var(--bg-color); color: 
 /* 21. Stickers display row */
 .trade-offer-card .offer-stickers {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 10px;
   padding: 8px 0;
 }
 
-/* 22. Sticker thumbnail in offer */
+/* 21b. Cada lado (Ofrece / Pide) */
+.trade-offer-card .offer-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.trade-offer-card .offer-side-label {
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* 21c. Contenedor de miniaturas: permite varias figuritas por lado sin desbordar */
+.trade-offer-card .offer-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* 22. Sticker thumbnail wrapper (contiene la <img>) */
 .trade-offer-card .offer-sticker-thumb {
   width: 48px;
   height: 48px;
-  object-fit: cover;
+  flex-shrink: 0;
+  overflow: hidden;
   border-radius: 6px;
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
   transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+/* 22b. La imagen real adentro del wrapper: esto es lo que faltaba */
+.trade-offer-card .offer-sticker-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .trade-offer-card .offer-sticker-thumb:hover {
