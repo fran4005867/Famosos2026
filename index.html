@@ -105,6 +105,10 @@
     <div class="packs-layout">
       <div class="packs-store">
         <h2 class="section-title" style="font-family: var(--font-title); color: #fff; margin-bottom: 20px;">Tienda de Sobres</h2>
+        <div class="packs-inventory" id="packs-inventory-container" style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
+          <span style="font-family: var(--font-title); font-size: 0.8rem; color: #ffd700; display: block; margin-bottom: 5px; letter-spacing: 1px;">SOBRES DISPONIBLES</span>
+          <span id="packs-count-label" style="font-family: var(--font-title); font-size: 1.8rem; font-weight: 900; color: white;">0</span>
+        </div>
         <div class="store-actions">
           <button class="store-btn free-pack-btn" id="free-pack-btn" onclick="claimFreePack()">
             <div class="store-btn-icon">🎁</div>
@@ -113,7 +117,7 @@
               <span class="store-btn-sub" id="free-pack-sub">¡Disponible ahora!</span>
             </div>
           </button>
-          <button class="store-btn buy-btn" id="buy-btn" onclick="openPack()">
+          <button class="store-btn buy-btn" id="buy-btn" onclick="buyPack()">
             <div class="store-btn-icon">🪙</div>
             <div class="store-btn-text">
               <span class="store-btn-title">Comprar Sobre</span>
@@ -295,6 +299,62 @@
           </div>
           <div id="admin-codes-list" style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
             <p style="color:#555; font-size:0.85rem;">Cargando...</p>
+          </div>
+        </div>
+
+        <!-- EDITOR DE INVENTARIOS DE USUARIO -->
+        <div class="admin-user-editor" style="margin-top: 30px; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
+          <h3 style="color:#ffd700; font-family:'Orbitron',sans-serif; font-size:0.9rem; margin-bottom: 12px; text-align: left;">Gestionar Inventarios de Usuarios</h3>
+          
+          <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <input type="text" id="admin-user-email-input" placeholder="Correo o UID del usuario..." 
+              style="flex:1; padding:12px; border-radius:8px; font-size:0.95rem; background:rgba(255,255,255,0.06); color:white; border:1.5px solid rgba(255,255,255,0.15); font-family: inherit;" />
+            <button onclick="adminSearchUser()" style="background:#ffd700; color:#12051a; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9rem; font-family:'Orbitron',sans-serif;">Buscar</button>
+          </div>
+
+          <div id="admin-user-result" class="hidden" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:16px; border-radius:12px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+              <span id="admin-user-found-email" style="font-weight:bold; color:#ffd700; font-size:0.9rem;">usuario@email.com</span>
+              <span id="admin-user-found-uid" style="font-size:0.75rem; color:#888;">UID: -</span>
+            </div>
+
+            <!-- Monedas y Sobres -->
+            <div style="display:flex; gap:12px; margin-bottom: 16px;">
+              <div style="flex:1;">
+                <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom: 4px;">Monedas 🪙</label>
+                <input type="number" id="admin-user-coins" style="width:100%; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15);" />
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom: 4px;">Sobres 🎁</label>
+                <input type="number" id="admin-user-packs" style="width:100%; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15);" />
+              </div>
+            </div>
+
+            <!-- Editar cantidad de una figurita específica -->
+            <div style="border-top:1px dashed rgba(255,255,255,0.1); padding-top: 12px; margin-bottom: 16px;">
+              <span style="font-size:0.8rem; color:#ffd700; font-weight:bold; display:block; margin-bottom:8px;">Modificar Figurita Específica</span>
+              <div style="display:flex; gap:8px; margin-bottom:8px;">
+                <select id="admin-user-sticker-team" onchange="adminOnTeamChange()" style="flex:1.2; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15); font-family: inherit;">
+                  <!-- Inyectado por JS -->
+                </select>
+                <select id="admin-user-sticker-num" onchange="adminOnStickerChange()" style="flex:1; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15); font-family: inherit;">
+                  <!-- Inyectado por JS -->
+                </select>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); margin-bottom: 12px;">
+                <span style="font-size:0.8rem; color:#ccc;">Estado actual:</span>
+                <span id="admin-user-sticker-status" style="font-size:0.8rem; font-weight:bold; color:white;">Repetidas: 0 | Pegada: NO</span>
+              </div>
+              
+              <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="adminChangeStickerQty(1)" style="flex:1; padding:8px; background:rgba(40,167,69,0.15); border:1px solid #28a745; color:#28a745; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.75rem; transition:0.2s;">+1 Repetida</button>
+                <button onclick="adminChangeStickerQty(-1)" style="flex:1; padding:8px; background:rgba(220,53,69,0.15); border:1px solid #dc3545; color:#dc3545; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.75rem; transition:0.2s;">-1 Repetida</button>
+                <button onclick="adminToggleStickerPasted()" style="flex:1.5; padding:8px; background:rgba(255,215,0,0.15); border:1px solid #ffd700; color:#ffd700; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.75rem; transition:0.2s;" id="admin-user-sticker-paste-btn">Pegar Figurita</button>
+              </div>
+            </div>
+
+            <!-- Botón guardar -->
+            <button onclick="adminSaveUserChanges()" style="width:100%; padding:12px; background:linear-gradient(135deg,#ffd700,#ffa500); color:#12051a; border:none; border-radius:8px; font-weight:900; font-family:'Orbitron',sans-serif; text-transform:uppercase; cursor:pointer; letter-spacing:1px; font-size:0.95rem; box-shadow:0 4px 15px rgba(255,215,0,0.25); transition: 0.2s;">Guardar Cambios de Usuario</button>
           </div>
         </div>
       </div>

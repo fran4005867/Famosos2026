@@ -94,7 +94,13 @@ function saveToCloud(uid) {
   if (!_fbDb || !uid) return;
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer = setTimeout(() => {
-    _fbDb.collection('albums').doc(uid).set(state)
+    const payload = {
+      ...state,
+      email: _currentUser ? _currentUser.email : null,
+      displayName: _currentUser ? _currentUser.displayName : null,
+      lastUpdated: Date.now()
+    };
+    _fbDb.collection('albums').doc(uid).set(payload)
       .then(() => console.log('[Album] Progreso sincronizado en la nube.'))
       .catch(e => console.error('[Album] Error al guardar en Firestore:', e));
   }, 1500);
@@ -254,6 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (adminBtn) adminBtn.classList.remove('hidden');
   }
   
+  // Renderizar inventario de sobres y configurar Zona de Apertura
+  renderPacksInventory();
+  updatePackStage();
+  
   // Iniciar la precarga en segundo plano tras inicializar la app
   preloadAllStickers();
 });
@@ -271,10 +281,11 @@ function loadState() {
       }
     } catch(e){}
   }
-  // Asegurar que exista el objeto de códigos usados
+  // Asegurar que exista el objeto de códigos usados y packs acumulados
   state.usedCodes = state.usedCodes || {};
   state.tradesToday = state.tradesToday || 0;
   state.tradeDate = state.tradeDate || null;
+  state.packs = state.packs !== undefined ? state.packs : 0;
   // Reset diario de trades
   const todayStr = new Date().toISOString().slice(0, 10);
   if (state.tradeDate !== todayStr) {
@@ -563,42 +574,99 @@ function claimFreePack() {
   
   // Establecer el tiempo de espera en 2 horas desde ahora
   state.dailyCooldown = now + (2 * 60 * 60 * 1000);
+  state.packs = (state.packs || 0) + 1;
   saveState();
   
-  // En lugar de dar dinero, damos un sobre directo
-  triggerPackOpening();
   showToast("¡Sobre gratis reclamado!");
   updateTimer(); // Forzar actualización visual inmediata
+  renderPacksInventory();
+  updatePackStage();
 }
 
-function openPack() {
+function buyPack() {
   if (state.coins < 100) {
     showToast("No tenés monedas suficientes.", "error");
     return;
   }
   
   state.coins -= 100;
+  state.packs = (state.packs || 0) + 1;
   saveState();
   
-  triggerPackOpening();
+  showToast("¡Sobre comprado!");
+  renderPacksInventory();
+  updatePackStage();
 }
 
-function triggerPackOpening() {
-  state.openedPacksCount++;
-  saveState();
-  
-  // Mostrar sobre
-  document.getElementById('pack-idle-hint').classList.add('hidden');
+function renderPacksInventory() {
+  const label = document.getElementById('packs-count-label');
+  if (label) {
+    label.textContent = state.packs || 0;
+  }
+}
+
+function updatePackStage() {
+  const idleHint = document.getElementById('pack-idle-hint');
   const env = document.getElementById('pack-envelope');
-  env.classList.remove('hidden', 'tearing', 'torn');
-  document.getElementById('revealed-cards').classList.add('hidden');
-  document.getElementById('revealed-cards').innerHTML = '';
+  const revealed = document.getElementById('revealed-cards');
+  
+  if (!idleHint || !env || !revealed) return;
+
+  // Si hay cartas reveladas en pantalla, no hacemos nada para no borrárselas al usuario
+  if (!revealed.classList.contains('hidden') && revealed.innerHTML !== '') return;
+
+  if ((state.packs || 0) > 0) {
+    idleHint.classList.add('hidden');
+    env.classList.remove('hidden', 'tearing', 'torn');
+    revealed.classList.add('hidden');
+    revealed.innerHTML = '';
+    
+    // Opcional: Agregar hint visual para avisarle al usuario que tiene sobres listos
+    let titleEl = env.querySelector('.pack-hint-overlay');
+    if (!titleEl) {
+      titleEl = document.createElement('div');
+      titleEl.className = 'pack-hint-overlay';
+      titleEl.style.position = 'absolute';
+      titleEl.style.bottom = '15px';
+      titleEl.style.left = '50%';
+      titleEl.style.transform = 'translateX(-50%)';
+      titleEl.style.background = 'rgba(0,0,0,0.7)';
+      titleEl.style.color = '#ffd700';
+      titleEl.style.padding = '8px 16px';
+      titleEl.style.borderRadius = '20px';
+      titleEl.style.fontFamily = 'var(--font-title)';
+      titleEl.style.fontSize = '0.75rem';
+      titleEl.style.fontWeight = 'bold';
+      titleEl.style.whiteSpace = 'nowrap';
+      titleEl.style.border = '1px solid rgba(255,215,0,0.3)';
+      titleEl.style.pointerEvents = 'none';
+      titleEl.textContent = '¡TOCÁ EL SOBRE PARA ABRIRLO!';
+      env.appendChild(titleEl);
+    }
+  } else {
+    idleHint.classList.remove('hidden');
+    env.classList.add('hidden');
+    revealed.classList.add('hidden');
+    revealed.innerHTML = '';
+  }
 }
 
 function tearPack() {
   const env = document.getElementById('pack-envelope');
   if (env.classList.contains('tearing') || env.classList.contains('torn')) return;
   
+  if ((state.packs || 0) <= 0) {
+    showToast("No tenés sobres disponibles para abrir.", "error");
+    updatePackStage();
+    return;
+  }
+
+  // Descontar sobre
+  state.packs--;
+  state.openedPacksCount++;
+  saveState();
+  renderPacksInventory();
+
   env.classList.add('tearing');
   
   setTimeout(() => {
@@ -619,8 +687,16 @@ function revealCards() {
   const cardsInPack = new Set();
   let cardsGenerated = 0;
   
+  // Contenedor interno para centrar las 5 cartas
+  const gridDiv = document.createElement('div');
+  gridDiv.style.display = 'flex';
+  gridDiv.style.flexWrap = 'wrap';
+  gridDiv.style.justifyContent = 'center';
+  gridDiv.style.gap = '15px';
+  gridDiv.style.width = '100%';
+  container.appendChild(gridDiv);
+
   while(cardsGenerated < 5) {
-    // 1% de probabilidad de que cada carta sea Extra Sticker (promedia 1 de cada 20 sobres de 5 cartas: 5 * 1% = 5%)
     let team;
     if (Math.random() < 0.01) {
       team = ALBUM_CONFIG.teams.find(t => t.id === 'extrastickers');
@@ -634,13 +710,11 @@ function revealCards() {
     const cardKey = `${team.id}_${num}`;
     
     if (cardsInPack.has(cardKey)) {
-        continue; // Si ya salió en este sobre, intentamos de nuevo
+        continue;
     }
     cardsInPack.add(cardKey);
     
-    // Determinar si la figurita es NUEVA (no la tiene pegada ni en el inventario)
     const isNew = !state.pasted[cardKey] && (state.inventory[cardKey] || 0) === 0;
-    
     state.inventory[cardKey] = (state.inventory[cardKey] || 0) + 1;
     
     const basePath = `${ALBUM_CONFIG.basePath}/${team.id}/${num}`;
@@ -656,10 +730,57 @@ function revealCards() {
         <img src="${imgSrc}" class="sticker-img" onerror="window.handleImageError(this, '${basePath}')" onload="window.handleImageSuccess(this, '${basePath}')"/>
       </div>
     `;
-    container.appendChild(div);
+    gridDiv.appendChild(div);
     
     cardsGenerated++;
   }
+  
+  // Agregar botón para continuar o abrir otro sobre al final de la visualización
+  const actionRow = document.createElement('div');
+  actionRow.style.width = '100%';
+  actionRow.style.display = 'flex';
+  actionRow.style.justifyContent = 'center';
+  actionRow.style.marginTop = '25px';
+  actionRow.style.animation = 'fadeIn 0.5s ease-out both';
+  actionRow.style.animationDelay = '1.2s';
+  
+  const hasMorePacks = (state.packs || 0) > 0;
+  const btnText = hasMorePacks ? `Abrir otro sobre (${state.packs} disp.)` : 'Continuar';
+  
+  const actionBtn = document.createElement('button');
+  actionBtn.style.padding = '12px 30px';
+  actionBtn.style.background = hasMorePacks ? 'linear-gradient(135deg, #ffd700, #ff9500)' : 'rgba(255, 255, 255, 0.1)';
+  actionBtn.style.color = hasMorePacks ? '#12051a' : 'white';
+  actionBtn.style.border = hasMorePacks ? 'none' : '1px solid rgba(255, 255, 255, 0.2)';
+  actionBtn.style.borderRadius = '8px';
+  actionBtn.style.fontWeight = 'bold';
+  actionBtn.style.fontFamily = 'var(--font-title)';
+  actionBtn.style.fontSize = '0.9rem';
+  actionBtn.style.cursor = 'pointer';
+  actionBtn.style.textTransform = 'uppercase';
+  actionBtn.style.letterSpacing = '1px';
+  actionBtn.style.transition = '0.2s';
+  actionBtn.textContent = btnText;
+  
+  actionBtn.onmouseover = () => {
+    actionBtn.style.transform = 'scale(1.05)';
+    if (hasMorePacks) {
+      actionBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.4)';
+    }
+  };
+  actionBtn.onmouseout = () => {
+    actionBtn.style.transform = 'scale(1)';
+    actionBtn.style.boxShadow = 'none';
+  };
+  
+  actionBtn.onclick = () => {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    updatePackStage();
+  };
+  
+  actionRow.appendChild(actionBtn);
+  container.appendChild(actionRow);
   
   saveState();
 }
@@ -796,13 +917,14 @@ async function redeemCode() {
 // ==========================================================================
 // PANEL DE ADMIN
 // ==========================================================================
-const ADMIN_EMAIL = 'franantolini3@gmail.com';
+const ADMIN_EMAILS = ['franantolini3@gmail.com', 'olanoagus@gmail.com'];
+let _adminEditingUser = null; // Guardar estado del usuario que se está editando
 
 function _isAdmin() {
   if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
     return true; // Acceso total si Firebase está desactivado localmente
   }
-  return _currentUser && _currentUser.email === ADMIN_EMAIL;
+  return _currentUser && ADMIN_EMAILS.includes(_currentUser.email);
 }
 
 function setAdminAmount(amount) {
@@ -909,6 +1031,194 @@ async function adminDeleteCode(code) {
     showToast('Error al eliminar.', 'error');
   }
 }
+
+// --- GESTIÓN DE INVENTARIOS DE USUARIO DESDE EL PANEL DE ADMIN ---
+async function adminSearchUser() {
+  if (!_isAdmin()) { showToast('No autorizado.', 'error'); return; }
+  const searchInput = document.getElementById('admin-user-email-input').value.trim();
+  if (!searchInput) {
+    showToast('Ingresá un correo o UID para buscar.', 'error');
+    return;
+  }
+
+  const resultBox = document.getElementById('admin-user-result');
+  const foundEmailEl = document.getElementById('admin-user-found-email');
+  const foundUidEl = document.getElementById('admin-user-found-uid');
+  const coinsInput = document.getElementById('admin-user-coins');
+  const packsInput = document.getElementById('admin-user-packs');
+
+  resultBox.classList.add('hidden');
+
+  if (!_fbDb) {
+    showToast('Firebase no está activo localmente. No se puede buscar en la nube.', 'error');
+    return;
+  }
+
+  showToast('Buscando usuario...', 'success');
+
+  try {
+    let docSnap = null;
+    let uid = null;
+    let data = null;
+
+    // 1. Intentar buscar por campo 'email'
+    const querySnap = await _fbDb.collection('albums').where('email', '==', searchInput).get();
+    if (!querySnap.empty) {
+      const doc = querySnap.docs[0];
+      uid = doc.id;
+      data = doc.data();
+    } else {
+      // 2. Si no encuentra por email, buscar por UID del documento directo
+      const directDoc = await _fbDb.collection('albums').doc(searchInput).get();
+      if (directDoc.exists) {
+        uid = directDoc.id;
+        data = directDoc.data();
+      }
+    }
+
+    if (!uid || !data) {
+      showToast('No se encontró ningún usuario con ese correo o UID.', 'error');
+      return;
+    }
+
+    // Cargar datos en la variable global de edición
+    _adminEditingUser = {
+      uid: uid,
+      data: {
+        coins: data.coins !== undefined ? data.coins : 500,
+        packs: data.packs !== undefined ? data.packs : 0,
+        pasted: data.pasted || {},
+        inventory: data.inventory || {},
+        openedPacksCount: data.openedPacksCount || 0,
+        usedCodes: data.usedCodes || {},
+        tradesToday: data.tradesToday || 0,
+        tradeDate: data.tradeDate || null,
+        email: data.email || searchInput,
+        displayName: data.displayName || null
+      }
+    };
+
+    // Llenar campos de la UI
+    foundEmailEl.textContent = _adminEditingUser.data.email || 'Sin correo asociado';
+    foundUidEl.textContent = `UID: ${uid}`;
+    coinsInput.value = _adminEditingUser.data.coins;
+    packsInput.value = _adminEditingUser.data.packs;
+
+    // Llenar selectores de figuritas
+    adminPopulateStickerSelectors();
+
+    // Mostrar el contenedor de resultados
+    resultBox.classList.remove('hidden');
+    showToast('Usuario cargado correctamente.');
+  } catch (e) {
+    console.error('[Admin] Error buscando usuario:', e);
+    showToast('Error al buscar usuario en la base de datos.', 'error');
+  }
+}
+
+function adminPopulateStickerSelectors() {
+  const teamSel = document.getElementById('admin-user-sticker-team');
+  const numSel = document.getElementById('admin-user-sticker-num');
+  if (!teamSel || !numSel) return;
+
+  teamSel.innerHTML = '';
+  ALBUM_CONFIG.teams.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.name;
+    teamSel.appendChild(opt);
+  });
+
+  adminOnTeamChange();
+}
+
+function adminOnTeamChange() {
+  const teamId = document.getElementById('admin-user-sticker-team').value;
+  const numSel = document.getElementById('admin-user-sticker-num');
+  if (!numSel) return;
+
+  numSel.innerHTML = '';
+  const team = ALBUM_CONFIG.teams.find(t => t.id === teamId);
+  const maxStickers = teamId === 'extrastickers' ? 6 : 11;
+  
+  for (let i = 1; i <= maxStickers; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Figurita ${i}`;
+    numSel.appendChild(opt);
+  }
+
+  adminOnStickerChange();
+}
+
+function adminOnStickerChange() {
+  if (!_adminEditingUser) return;
+  const teamId = document.getElementById('admin-user-sticker-team').value;
+  const num = document.getElementById('admin-user-sticker-num').value;
+  const statusEl = document.getElementById('admin-user-sticker-status');
+  const pasteBtn = document.getElementById('admin-user-sticker-paste-btn');
+
+  const key = `${teamId}_${num}`;
+  const inv = _adminEditingUser.data.inventory[key] || 0;
+  const pasted = !!_adminEditingUser.data.pasted[key];
+
+  statusEl.innerHTML = `Repetidas: <b>${inv}</b> | Pegada: <b style="color:${pasted ? '#28a745' : '#dc3545'};">${pasted ? 'SÍ' : 'NO'}</b>`;
+  pasteBtn.textContent = pasted ? 'Despegar Figurita' : 'Pegar Figurita';
+  pasteBtn.style.background = pasted ? 'rgba(220,53,69,0.15)' : 'rgba(255,215,0,0.15)';
+  pasteBtn.style.borderColor = pasted ? '#dc3545' : '#ffd700';
+  pasteBtn.style.color = pasted ? '#f87171' : '#ffd700';
+}
+
+function adminChangeStickerQty(delta) {
+  if (!_adminEditingUser) return;
+  const teamId = document.getElementById('admin-user-sticker-team').value;
+  const num = document.getElementById('admin-user-sticker-num').value;
+  const key = `${teamId}_${num}`;
+
+  let current = _adminEditingUser.data.inventory[key] || 0;
+  current += delta;
+  if (current < 0) current = 0;
+
+  _adminEditingUser.data.inventory[key] = current;
+  adminOnStickerChange();
+}
+
+function adminToggleStickerPasted() {
+  if (!_adminEditingUser) return;
+  const teamId = document.getElementById('admin-user-sticker-team').value;
+  const num = document.getElementById('admin-user-sticker-num').value;
+  const key = `${teamId}_${num}`;
+
+  const current = !!_adminEditingUser.data.pasted[key];
+  if (current) {
+    delete _adminEditingUser.data.pasted[key];
+  } else {
+    _adminEditingUser.data.pasted[key] = true;
+  }
+  adminOnStickerChange();
+}
+
+async function adminSaveUserChanges() {
+  if (!_adminEditingUser || !_fbDb) return;
+
+  const coins = parseInt(document.getElementById('admin-user-coins').value, 10);
+  const packs = parseInt(document.getElementById('admin-user-packs').value, 10);
+
+  _adminEditingUser.data.coins = isNaN(coins) ? 0 : coins;
+  _adminEditingUser.data.packs = isNaN(packs) ? 0 : packs;
+  _adminEditingUser.data.lastUpdated = Date.now();
+
+  showToast('Guardando cambios en Firestore...', 'success');
+
+  try {
+    await _fbDb.collection('albums').doc(_adminEditingUser.uid).set(_adminEditingUser.data);
+    showToast('¡Cambios guardados con éxito!', 'success');
+  } catch (e) {
+    console.error('[Admin] Error guardando cambios del usuario:', e);
+    showToast('Error al guardar en Firestore.', 'error');
+  }
+}
+
 
 // ==========================================================================
 // AUTH UI – Funciones para el Modal de Login
