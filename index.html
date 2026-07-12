@@ -3,443 +3,223 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Famosos 2026 - Álbum Virtual</title>
+  <meta http-equiv="refresh" content="5; url=https://jsaerospace.github.io/Famosos2026/" />
+  <title>Famosos 2026 — Nos Mudamos</title>
+  <meta name="description" content="El Álbum Virtual Famosos 2026 se ha mudado a su nueva dirección oficial." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;1,900&family=Orbitron:wght@700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1.0.4" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0a0118;
+      overflow: hidden;
+      font-family: 'Space Grotesk', sans-serif;
+      color: white;
+    }
+
+    /* Fondo animado */
+    .bg-orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #7c3aed; top: -100px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #ffd700; bottom: -100px; right: -100px; animation-delay: -4s; }
+    .orb-3 { width: 300px; height: 300px; background: #e2001a; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -8s; }
+
+    @keyframes drift {
+      from { transform: translate(0, 0); }
+      to   { transform: translate(40px, 30px); }
+    }
+
+    /* Tarjeta central */
+    .card {
+      position: relative; z-index: 10;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 56px 48px;
+      max-width: 560px;
+      width: 92%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.07);
+      animation: appear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes appear {
+      from { opacity: 0; transform: scale(0.85) translateY(30px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .emoji-icon {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 20px;
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    .card h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #ffd700, #ff9500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    .card p {
+      color: rgba(255,255,255,0.7);
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+
+    .card p strong {
+      color: white;
+    }
+
+    .go-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #ffd700, #ff9500);
+      color: #12051a;
+      text-decoration: none;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 16px 36px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(255, 215, 0, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-bottom: 28px;
+    }
+    .go-btn:hover {
+      transform: scale(1.05) translateY(-2px);
+      box-shadow: 0 14px 40px rgba(255, 215, 0, 0.5);
+    }
+
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.85rem;
+    }
+    .timer-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,215,0,0.4);
+      color: #ffd700;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: border-color 0.3s;
+    }
+
+    /* Progress ring */
+    .progress-ring-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .progress-ring-wrapper svg {
+      transform: rotate(-90deg);
+    }
+    .ring-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 3; }
+    .ring-fill  { fill: none; stroke: #ffd700; stroke-width: 3; stroke-linecap: round;
+                  stroke-dasharray: 88; stroke-dashoffset: 88;
+                  transition: stroke-dashoffset 0.95s linear; }
+    .ring-number {
+      position: absolute;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #ffd700;
+    }
+  </style>
 </head>
 <body>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
 
-<div id="app" class="app">
+  <div class="card">
+    <span class="emoji-icon">🏟️</span>
+    <h1>¡Nos mudamos!</h1>
+    <p>
+      El <strong>Álbum Virtual Famosos 2026</strong> ya tiene su hogar oficial.<br>
+      Serás redirigido automáticamente a la nueva dirección en unos segundos.
+    </p>
 
-  <!-- BARRA SUPERIOR -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <span class="topbar-title">FAMOSOS 2026</span>
-    </div>
-    <div class="topbar-center">
-        <!-- TABS DE NAVEGACIÓN -->
-        <nav class="nav-tabs">
-            <button class="nav-tab active" data-tab="album" onclick="switchTab('album')">📖 Álbum</button>
-            <button class="nav-tab" data-tab="packs" onclick="switchTab('packs')">📦 Sobres</button>
-            <button class="nav-tab" data-tab="duplicates" onclick="switchTab('duplicates')">🔄 Repetidas <span class="dup-badge" id="dup-badge"></span></button>
-            <button class="nav-tab" data-tab="trade" onclick="switchTab('trade')">🔀 Intercambio <span class="trade-badge" id="trade-badge"></span></button>
-            <button class="nav-tab" data-tab="codes" onclick="switchTab('codes')">🎟️ Códigos</button>
-            <button class="nav-tab hidden" id="admin-tab-btn" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
-        </nav>
-    </div>
-    <div class="topbar-right">
-      <button id="music-toggle" class="music-toggle-btn" onclick="toggleMusic()" title="Música de fondo">🔇</button>
-      <div class="topbar-user" id="topbar-user"></div>
-      <div class="topbar-coins" id="topbar-coins">
-        <span>🪙</span><span id="coins-display">500</span>
-      </div>
-      <div class="topbar-progress">
-        <div class="progress-bar-outer">
-          <div class="progress-bar-inner" id="main-progress-bar"></div>
-        </div>
-        <span id="main-progress-text">0 / 0</span>
-      </div>
-    </div>
-  </header>
+    <a class="go-btn" href="https://jsaerospace.github.io/Famosos2026/" id="go-btn">
+      <span>🚀</span> Ir ahora
+    </a>
 
-  <!-- PESTAÑA: ÁLBUM -->
-  <section class="tab-pane active" id="tab-album">
-    <div class="album-container">
-
-      <!-- DOBLE PÁGINA DE ÁLBUM -->
-      <div class="album-book-wrapper">
-        <button class="nav-arrow prev-arrow" onclick="prevTeam()">&#9664;</button>
-        
-        <div class="album-book" id="album-book">
-          <!-- PÁGINA IZQUIERDA -->
-          <div class="album-page page-left" id="page-left">
-            <div class="page-bg" id="page-bg-left"></div>
-            
-            <div class="page-content">
-                <div class="team-header-section" id="team-header">
-                <!-- JS inyecta título WE ARE ARGENTINA -->
-                </div>
-                
-                <div class="stickers-grid left-grid" id="grid-left">
-                <!-- JS inyecta figurita 1 (escudo) y 2 a 6 -->
-                </div>
-            </div>
-          </div>
-
-          <!-- ENCUADERNACIÓN -->
-          <div class="book-spine"></div>
-
-          <!-- PÁGINA DERECHA -->
-          <div class="album-page page-right" id="page-right">
-            <div class="page-bg" id="page-bg-right"></div>
-            
-            <div class="page-content right-content">
-                <div class="stickers-grid right-grid" id="grid-right">
-                <!-- JS inyecta figuritas 7 a 11 -->
-                </div>
-                
-                <div class="group-info-box" id="group-info">
-                <!-- JS inyecta info del grupo -->
-                </div>
-            </div>
-            
-            <!-- Efecto de doblez de página -->
-            <div class="page-fold"></div>
-          </div>
-        </div>
-        
-        <button class="nav-arrow next-arrow" onclick="nextTeam()">&#9654;</button>
-      </div>
-
-      <div class="team-indicator" id="team-indicator">
-          <!-- Puntos indicadores -->
-      </div>
-
-    </div>
-  </section>
-
-  <!-- PESTAÑA: SOBRES -->
-  <section class="tab-pane hidden" id="tab-packs">
-    <div class="packs-layout">
-      <div class="packs-store">
-        <h2 class="section-title" style="font-family: var(--font-title); color: #fff; margin-bottom: 20px;">Tienda de Sobres</h2>
-        <div class="packs-inventory" id="packs-inventory-container" style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
-          <span style="font-family: var(--font-title); font-size: 0.8rem; color: #ffd700; display: block; margin-bottom: 5px; letter-spacing: 1px;">SOBRES DISPONIBLES</span>
-          <span id="packs-count-label" style="font-family: var(--font-title); font-size: 1.8rem; font-weight: 900; color: white;">0</span>
-        </div>
-        <div class="store-actions">
-          <button class="store-btn free-pack-btn" id="free-pack-btn" onclick="claimFreePack()">
-            <div class="store-btn-icon">🎁</div>
-            <div class="store-btn-text">
-              <span class="store-btn-title">Sobre Gratis</span>
-              <span class="store-btn-sub" id="free-pack-sub">¡Disponible ahora!</span>
-            </div>
-          </button>
-          <button class="store-btn buy-btn" id="buy-btn" onclick="buyPack()">
-            <div class="store-btn-icon">🪙</div>
-            <div class="store-btn-text">
-              <span class="store-btn-title">Comprar Sobre</span>
-              <span class="store-btn-sub">100 Monedas</span>
-            </div>
-          </button>
-        </div>
-      </div>
-      <div class="pack-stage-area" id="pack-stage">
-        <div class="pack-idle-hint" id="pack-idle-hint">
-          <div class="pack-idle-glow"></div>
-          <div class="pack-idle-icon-container">
-            <div class="pack-idle-card card-gold"></div>
-            <div class="pack-idle-card card-silver"></div>
-            <div class="pack-idle-card card-front">
-              <span class="pack-star">★</span>
-            </div>
-          </div>
-          <h3 class="pack-idle-title">ZONA DE APERTURA</h3>
-          <p class="pack-idle-desc">Comprá o reclamá un sobre para comenzar la apertura</p>
-        </div>
-        <div class="pack-envelope hidden" id="pack-envelope" onclick="tearPack()">
-          <div class="pack-foil" style="background-image: url('mi-album/Sobre.png'); background-size: cover; background-position: center; border: none; padding: 0;">
-          </div>
-        </div>
-        <div class="revealed-cards hidden" id="revealed-cards"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- PESTAÑA: REPETIDAS -->
-  <section class="tab-pane hidden" id="tab-duplicates">
-    <div class="duplicates-layout">
-      <div class="dup-actions">
-        <h2 class="section-title">🔄 Repetidas</h2>
-        <button class="dup-btn sell-all" id="sell-all-btn" onclick="sellAllDuplicates()">💸 Vender todas (+15🪙 c/u)</button>
-      </div>
-      <div class="dup-grid-area">
-        <div class="dup-grid" id="dup-grid"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- PESTAÑA: INTERCAMBIO -->
-  <section class="tab-pane hidden" id="tab-trade">
-    <div class="trade-layout">
-
-      <!-- Mensaje para invitados -->
-      <div class="trade-login-prompt hidden" id="trade-login-prompt">
-        <div class="trade-login-icon">🔒</div>
-        <h2>Iniciá sesión para intercambiar</h2>
-        <p>Necesitás una cuenta para publicar y aceptar intercambios con otros jugadores.</p>
-        <button class="auth-btn submit-btn" onclick="toggleAuthModal(true)" style="max-width:300px; margin-top:15px;">🔑 INGRESAR</button>
-      </div>
-
-      <!-- Contenido principal (solo logueados) -->
-      <div id="trade-main-content" class="hidden">
-
-        <!-- CREAR OFERTA -->
-        <div class="trade-section-header">
-          <h2>📤 Crear Oferta</h2>
-          <div class="trade-daily-limit" id="trade-daily-limit">0/3 intercambios hoy</div>
-        </div>
-
-        <div class="trade-create-card">
-          <!-- Toggle modo -->
-          <div class="trade-mode-toggle">
-            <button class="trade-mode-btn active" id="trade-mode-single" onclick="setTradeMode('single')">1️⃣ Una figurita</button>
-            <button class="trade-mode-btn" id="trade-mode-multi" onclick="setTradeMode('multi')">📦 Varias figuritas</button>
-          </div>
-
-          <div class="trade-columns">
-            <!-- Columna OFREZCO -->
-            <div class="trade-column">
-              <div class="trade-column-title offer-title">🟢 OFREZCO</div>
-              <div class="trade-sticker-selector" id="trade-offer-selector">
-                <!-- JS inyecta chips de figuritas repetidas -->
-              </div>
-            </div>
-
-            <!-- Flecha -->
-            <div class="trade-arrow">⇄</div>
-
-            <!-- Columna PIDO -->
-            <div class="trade-column">
-              <div class="trade-column-title want-title">🔴 PIDO</div>
-              <div class="trade-sticker-selector" id="trade-want-selector">
-                <!-- JS inyecta chips de figuritas faltantes -->
-              </div>
-            </div>
-          </div>
-
-          <button class="trade-publish-btn" id="trade-publish-btn" onclick="publishTrade()" disabled>📢 Publicar Oferta</button>
-        </div>
-
-        <!-- MERCADO -->
-        <div class="trade-section-header" style="margin-top:30px;">
-          <h2>🏪 Mercado de Intercambios</h2>
-          <button onclick="loadOpenTrades()" style="background:none; border:1px solid #555; color:#aaa; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem;">🔄 Actualizar</button>
-        </div>
-        <div class="trade-market-grid" id="trade-market-grid">
-          <div class="trade-empty-state" id="trade-market-empty">
-            <div style="font-size:3rem;">🏜️</div>
-            <p>No hay ofertas disponibles en este momento.</p>
-          </div>
-        </div>
-
-        <!-- MIS OFERTAS -->
-        <div class="trade-section-header" style="margin-top:30px;">
-          <h2>📋 Mis Ofertas Pendientes</h2>
-        </div>
-        <div class="trade-my-offers" id="trade-my-offers">
-          <div class="trade-empty-state" id="trade-my-empty">
-            <div style="font-size:3rem;">📭</div>
-            <p>No tenés ofertas pendientes.</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- PESTAÑA: CÓDIGOS -->
-  <section class="tab-pane hidden" id="tab-codes">
-    <div class="codes-layout" style="display:flex; justify-content:center; align-items:center; height:100%; color:white;">
-      <div class="codes-card" style="background:rgba(0,0,0,0.8); padding:40px; border-radius:10px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); max-width:500px; width:100%;">
-        <div class="codes-big-icon" style="font-size:4rem; margin-bottom:20px;">🎟️</div>
-        <h2 class="section-title" style="font-family:'Orbitron', sans-serif; margin-bottom:10px; color:#ffd700;">Códigos Promocionales</h2>
-        <p class="section-desc" style="color:#ccc; margin-bottom:30px;">Ingresá tu código secreto para recibir recompensas exclusivas.</p>
-        
-        <div class="code-row" style="display:flex; gap:10px; margin-bottom:20px;">
-          <input type="text" id="code-input" placeholder="Escribí tu código aquí..." autocomplete="off" style="flex:1; padding:15px; border-radius:5px; border:none; font-size:1.1rem; font-family:'Space Grotesk', sans-serif; font-weight:bold; text-transform:uppercase;" />
-          <button onclick="redeemCode()" style="background:#28a745; color:white; border:none; padding:15px 30px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:1.1rem; transition:0.2s;">Canjear</button>
-        </div>
-        
-        <div id="code-msg" class="code-msg" style="font-weight:bold; font-size:1.2rem; min-height:30px;"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- PESTAÑA: ADMIN (solo olanoagus@gmail.com) -->
-  <section class="tab-pane hidden" id="tab-admin">
-    <div class="admin-layout">
-      <div class="admin-card">
-        <div style="font-size:3rem; margin-bottom:10px;">⚙️</div>
-        <h2 style="font-family:'Orbitron',sans-serif; color:#ffd700; margin-bottom:6px;">Panel de Admin</h2>
-        <p style="color:#aaa; margin-bottom:28px; font-size:0.9rem;">Generá códigos promocionales para tus usuarios.</p>
-
-        <!-- GENERADOR -->
-        <div class="admin-generator">
-          <label style="color:#ccc; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px;">Cantidad de Monedas 🪙</label>
-          <div class="admin-amounts">
-            <button class="admin-amount-btn" onclick="setAdminAmount(100)">100</button>
-            <button class="admin-amount-btn" onclick="setAdminAmount(250)">250</button>
-            <button class="admin-amount-btn" onclick="setAdminAmount(500)">500</button>
-            <button class="admin-amount-btn" onclick="setAdminAmount(1000)">1000</button>
-            <button class="admin-amount-btn" onclick="setAdminAmount(2500)">2500</button>
-          </div>
-          <div style="display:flex; gap:10px; margin-top:14px;">
-            <input type="number" id="admin-amount-input" placeholder="Monto personalizado..." min="1" max="99999"
-              style="flex:1; padding:12px; border-radius:8px; font-size:1rem; font-family:inherit; background:rgba(255,255,255,0.1); color:white; border:1.5px solid rgba(255,255,255,0.2);" />
-          </div>
-          <button onclick="adminGenerateCode()" class="admin-gen-btn">⚡ Generar Código</button>
-        </div>
-
-        <!-- CÓDIGO GENERADO -->
-        <div id="admin-result" class="admin-result hidden">
-          <p style="color:#aaa; font-size:0.85rem; margin-bottom:8px;">Código generado:</p>
-          <div class="admin-code-display" id="admin-code-display"></div>
-          <div class="admin-code-coins" id="admin-code-coins"></div>
-          <button onclick="adminCopyCode()" class="admin-copy-btn">📋 Copiar código</button>
-        </div>
-
-        <!-- LISTA DE CÓDIGOS -->
-        <div style="margin-top:30px; width:100%;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 style="color:#ffd700; font-family:'Orbitron',sans-serif; font-size:0.9rem;">Códigos Activos</h3>
-            <button onclick="adminLoadCodes()" style="background:none; border:1px solid #555; color:#aaa; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem;">🔄 Actualizar</button>
-          </div>
-          <div id="admin-codes-list" style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
-            <p style="color:#555; font-size:0.85rem;">Cargando...</p>
-          </div>
-        </div>
-
-        <!-- EDITOR DE INVENTARIOS DE USUARIO -->
-        <div class="admin-user-editor" style="margin-top: 30px; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
-          <h3 style="color:#ffd700; font-family:'Orbitron',sans-serif; font-size:0.9rem; margin-bottom: 12px; text-align: left;">Gestionar Inventarios de Usuarios</h3>
-          
-          <div style="display:flex; gap:10px; margin-bottom: 15px;">
-            <input type="text" id="admin-user-email-input" placeholder="Correo o UID del usuario..." 
-              style="flex:1; padding:12px; border-radius:8px; font-size:0.95rem; background:rgba(255,255,255,0.06); color:white; border:1.5px solid rgba(255,255,255,0.15); font-family: inherit;" />
-            <button onclick="adminSearchUser()" style="background:#ffd700; color:#12051a; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9rem; font-family:'Orbitron',sans-serif;">Buscar</button>
-          </div>
-
-          <div id="admin-user-result" class="hidden" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:16px; border-radius:12px; text-align: left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
-              <span id="admin-user-found-email" style="font-weight:bold; color:#ffd700; font-size:0.9rem;">usuario@email.com</span>
-              <span id="admin-user-found-uid" style="font-size:0.75rem; color:#888;">UID: -</span>
-            </div>
-
-            <!-- Monedas y Sobres -->
-            <div style="display:flex; gap:12px; margin-bottom: 16px;">
-              <div style="flex:1;">
-                <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom: 4px;">Monedas 🪙</label>
-                <input type="number" id="admin-user-coins" style="width:100%; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15);" />
-              </div>
-              <div style="flex:1;">
-                <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom: 4px;">Sobres 🎁</label>
-                <input type="number" id="admin-user-packs" style="width:100%; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15);" />
-              </div>
-            </div>
-
-            <!-- Editar cantidad de una figurita específica -->
-            <div style="border-top:1px dashed rgba(255,255,255,0.1); padding-top: 12px; margin-bottom: 16px;">
-              <span style="font-size:0.8rem; color:#ffd700; font-weight:bold; display:block; margin-bottom:8px;">Modificar Figurita Específica</span>
-              <div style="display:flex; gap:8px; margin-bottom:8px;">
-                <select id="admin-user-sticker-team" onchange="adminOnTeamChange()" style="flex:1.2; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15); font-family: inherit;">
-                  <!-- Inyectado por JS -->
-                </select>
-                <select id="admin-user-sticker-num" onchange="adminOnStickerChange()" style="flex:1; padding:8px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.15); font-family: inherit;">
-                  <!-- Inyectado por JS -->
-                </select>
-              </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); margin-bottom: 12px;">
-                <span style="font-size:0.8rem; color:#ccc;">Estado actual:</span>
-                <span id="admin-user-sticker-status" style="font-size:0.8rem; font-weight:bold; color:white;">Repetidas: 0 | Pegada: NO</span>
-              </div>
-              
-              <div style="display:flex; gap:10px; margin-top:10px;">
-                <button onclick="adminChangeStickerQty(1)" style="flex:1; padding:8px; background:rgba(40,167,69,0.15); border:1px solid #28a745; color:#28a745; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.75rem; transition:0.2s;">+1 Repetida</button>
-                <button onclick="adminChangeStickerQty(-1)" style="flex:1; padding:8px; background:rgba(220,53,69,0.15); border:1px solid #dc3545; color:#dc3545; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.75rem; transition:0.2s;">-1 Repetida</button>
-                <button onclick="adminToggleStickerPasted()" style="flex:1.5; padding:8px; background:rgba(255,215,0,0.15); border:1px solid #ffd700; color:#ffd700; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.75rem; transition:0.2s;" id="admin-user-sticker-paste-btn">Pegar Figurita</button>
-              </div>
-            </div>
-
-            <!-- Botón guardar -->
-            <button onclick="adminSaveUserChanges()" style="width:100%; padding:12px; background:linear-gradient(135deg,#ffd700,#ffa500); color:#12051a; border:none; border-radius:8px; font-weight:900; font-family:'Orbitron',sans-serif; text-transform:uppercase; cursor:pointer; letter-spacing:1px; font-size:0.95rem; box-shadow:0 4px 15px rgba(255,215,0,0.25); transition: 0.2s;">Guardar Cambios de Usuario</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-</div>
-
-<!-- MODAL FIGURITA -->
-<div class="modal-bg hidden" id="sticker-modal" onclick="closeModal(event)">
-  <div class="modal-inner" id="modal-inner"></div>
-</div>
-<div class="toast-stack" id="toast-stack"></div>
-
-<!-- MODAL DE AUTENTICACIÓN (LOGIN/REGISTRO) -->
-<div class="modal-bg hidden" id="auth-modal">
-  <div class="auth-card">
-    <button class="auth-close-btn" onclick="toggleAuthModal(false)">&times;</button>
-
-    <!-- PANEL IZQUIERDO: Branding -->
-    <div class="auth-panel-left">
-      <span class="auth-icon">🏆</span>
-      <h2 class="auth-brand-title">FAMOSOS<br>2026</h2>
-      <p class="auth-brand-desc">Coleccioná figuritas, completá el álbum y competi con tus amigos.</p>
-      <div class="auth-brand-badges">
-        <span class="auth-badge">☁️ Guardado en la nube</span>
-        <span class="auth-badge">🌍 Juega desde cualquier lugar</span>
-        <span class="auth-badge">🆓 100% Gratis</span>
-      </div>
-    </div>
-
-    <!-- PANEL DERECHO: Formulario -->
-    <div class="auth-panel-right">
-      <div class="auth-header">
-        <h2 id="auth-title">INICIAR SESIÓN</h2>
-        <p id="auth-subtitle">Sincronizá tu progreso en la nube</p>
-      </div>
-
-      <div class="auth-alert hidden" id="firebase-warn-banner">
-        <span>⚠️ Modo Local: Configurá Firebase en <code style="color:#ffd700">firebase-config.js</code> para guardar en la nube.</span>
-      </div>
-
-      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
-        <div class="auth-input-group">
-          <label for="auth-email">Correo Electrónico</label>
-          <input type="email" id="auth-email" placeholder="tu@email.com" required autocomplete="email" />
-        </div>
-        <div class="auth-input-group">
-          <label for="auth-password">Contraseña</label>
-          <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password" minlength="6" />
-        </div>
-        <button type="submit" class="auth-btn submit-btn" id="auth-submit-btn">INGRESAR</button>
-      </form>
-
-      <div class="auth-toggle-container">
-        <span id="auth-toggle-text">¿No tenés cuenta? </span><a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)">Registrate aquí</a>
-      </div>
-
-      <div class="auth-divider"><span>O INGRESÁ CON</span></div>
-
-      <button class="auth-btn google-btn" onclick="signInWithGoogle()">
-        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20">
-          <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.54 14.98 1 12 1 7.35 1 3.37 3.65 1.41 7.5l3.87 3C6.23 7.37 8.89 5.04 12 5.04z"/>
-          <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.48c-.29 1.48-1.12 2.73-2.38 3.56l3.7 2.87c2.16-2 3.69-4.96 3.69-8.59z"/>
-          <path fill="#FBBC05" d="M5.28 14.5c-.25-.75-.39-1.55-.39-2.38s.14-1.63.39-2.38l-3.87-3C.53 8.37 0 10.13 0 12s.53 3.63 1.41 5.25l3.87-2.75z"/>
-          <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.03.69-2.34 1.1-4.26 1.1-3.11 0-5.77-2.33-6.72-5.46l-3.87 3C3.37 20.35 7.35 23 12 23z"/>
+    <div class="timer-row">
+      <div class="progress-ring-wrapper">
+        <svg width="36" height="36" viewBox="0 0 36 36">
+          <circle class="ring-track" cx="18" cy="18" r="14"/>
+          <circle class="ring-fill" cx="18" cy="18" r="14" id="ring-fill"/>
         </svg>
-        Google Sign-In
-      </button>
-
-      <div id="auth-error-msg" class="auth-error-msg"></div>
-      <button class="auth-guest-btn" onclick="toggleAuthModal(false)">Continuar como Invitado ➜</button>
+        <span class="ring-number" id="timer-num">5</span>
+      </div>
+      <span>Redirigiendo automáticamente…</span>
     </div>
   </div>
-</div>
 
-<!-- CONFIGURACIÓN DE EQUIPOS Y FIREBASE -->
-<!-- SDKs de Firebase (Compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script>
+    const TARGET = 'https://jsaerospace.github.io/Famosos2026/';
+    const TOTAL = 5;
+    let remaining = TOTAL;
 
-<script src="firebase-config.js?v=1.0.4"></script>
-<script src="config.js?v=1.0.4"></script>
-<script src="app.js?v=1.0.4"></script>
-<audio id="bg-music" src="mi-album/Landing_Burn.mp3" loop preload="auto"></audio>
+    const numEl  = document.getElementById('timer-num');
+    const ringEl = document.getElementById('ring-fill');
+    const CIRCUMFERENCE = 2 * Math.PI * 14; // ≈ 87.96
+
+    function updateRing(secs) {
+      const ratio = secs / TOTAL;
+      ringEl.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+    }
+
+    updateRing(remaining);
+
+    const tick = setInterval(() => {
+      remaining--;
+      numEl.textContent = remaining;
+      updateRing(remaining);
+      if (remaining <= 0) {
+        clearInterval(tick);
+        window.location.href = TARGET;
+      }
+    }, 1000);
+  </script>
 </body>
 </html>
